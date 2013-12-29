@@ -1,0 +1,38 @@
+<project name="ShareServiceSocketWifiUtil" default="dist" basedir="."> 
+
+<!-- set global properties for this build -->
+<property name="src" value="."/>
+<property name="build" value="bin"/>
+<property name="dist" value="dist"/>
+<property name="forest" value="../forest"/> 
+
+<path id="project.class.path">  
+<pathelement location="libs/android.jar"/>
+<pathelement path="${java.class.path}/"/>   
+<pathelement path="${additional.path}"/> 
+</path>
+
+<target name="init">
+<mkdir dir="${build}"/>
+<mkdir dir="${dist}"/>
+</target>
+ 
+<target name="compile" depends="init">
+<javac srcdir="${forest}/${src}" destdir="${build}">
+	<compilerarg line=" -encoding UTF-8"/>
+</javac>
+<javac srcdir="${src}" destdir="${build}">
+	<compilerarg line=" -encoding UTF-8"/>
+	<classpath refid="project.class.path"/>    
+</javac>
+</target>
+
+<target name="dist" depends="compile">
+<jar jarfile="${dist}/ShareServiceSocket.jar" basedir="${build}"/>
+</target>
+
+<target name="clean">
+<delete dir="${build}"/>
+</target>
+
+</project>
