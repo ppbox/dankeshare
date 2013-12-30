@@ -20,7 +20,7 @@ import com.chainton.dankeshare.data.enums.ClientStatus;
 import com.chainton.dankeshare.data.enums.ShareCircleClientMessageType;
 import com.chainton.dankeshare.data.enums.ShareCircleServerMessageType;
 import com.chainton.dankeshare.util.LogUtil;
-import com.chainton.forest.core.IoSession;
+import com.chainton.forest.core.NioSession;
 import com.chainton.forest.core.helper.ForestMessageClient;
 import com.chainton.forest.core.helper.ForestMessageClientEvents;
 import com.chainton.forest.core.message.UserMessage;
@@ -72,14 +72,14 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 		}
 
 		@Override
-		public void onSessionOpened(IoSession session) {
+		public void onSessionOpened(NioSession session) {
 			Log.d("ShareService", Thread.currentThread().getId() + " Client " + myInfo.getIp() + " session opened.");
 			clientStatus = ClientStatus.CONNECTED;
 			registerClient();
 		}
 
 		@Override
-		public void onSessionClosed(IoSession session) {
+		public void onSessionClosed(NioSession session) {
 			Log.d("ShareService", Thread.currentThread().getId() + " Client " + myInfo.getIp() + " session closed.");
 			clientStatus = ClientStatus.UNCONNECTED;
 			osHandler.post(new Runnable() {

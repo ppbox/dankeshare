@@ -18,7 +18,7 @@ import com.chainton.dankeshare.data.ResourceInfo;
 import com.chainton.dankeshare.data.enums.ShareCircleClientMessageType;
 import com.chainton.dankeshare.data.enums.ShareCircleServerMessageType;
 import com.chainton.dankeshare.util.LogUtil;
-import com.chainton.forest.core.IoSession;
+import com.chainton.forest.core.NioSession;
 import com.chainton.forest.core.helper.ForestMessageServer;
 import com.chainton.forest.core.helper.ForestMessageServerEvents;
 import com.chainton.forest.core.message.UserMessage;
@@ -45,8 +45,8 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 	private volatile Set<ResourceInfo> allSharedResources;
 
 	// 用户信息和会话的相互映射
-	private volatile Map<ClientInfo, IoSession> clientSessionMap;
-	private volatile Map<IoSession, ClientBundle> clientBundles;
+	private volatile Map<ClientInfo, NioSession> clientSessionMap;
+	private volatile Map<NioSession, ClientBundle> clientBundles;
 	private volatile List<ClientInfo> acceptedClients;
 	
 	private volatile ShareCircleInfo shareCircleInfo;
@@ -67,8 +67,8 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 		System.out.println(Thread.currentThread().getId() + " ShareCircleServer IP: " + this.shareCircleInfo.getServerIP());
 		this.messageServer = new ForestMessageServer(this.serverEventsHandler);
 
-		this.clientSessionMap = new HashMap<ClientInfo, IoSession>();
-		this.clientBundles = new HashMap<IoSession, ClientBundle>();
+		this.clientSessionMap = new HashMap<ClientInfo, NioSession>();
+		this.clientBundles = new HashMap<NioSession, ClientBundle>();
 		this.allSharedResources = new HashSet<ResourceInfo>();
 		this.acceptedClients = new CopyOnWriteArrayList<ClientInfo>();
 		
@@ -92,14 +92,14 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 		}
 
 		@Override
-		public void onSessionOpened(IoSession session) {
+		public void onSessionOpened(NioSession session) {
 			System.out.println(Thread.currentThread().getId() + " IoSession opened on server.");
 			ClientBundle clientBundle = new ClientBundle();
 			clientBundles.put(session, clientBundle);
 		}
 
 		@Override
-		public void onSessionClosed(IoSession session) {
+		public void onSessionClosed(NioSession session) {
 			ClientBundle clientBundle = clientBundles.get(session);
 			if (clientBundle != null) {
 				final ClientInfo client = clientBundle.clientInfo;
@@ -125,7 +125,7 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 			final ClientInfo client;
 			final byte[] bytes;
 			ResourceInfo resource;
-			IoSession session = message.session;
+			NioSession session = message.session;
 			ShareCircleClientMessageType msgType = ShareCircleClientMessageType.parseFromInt(message.messageType);
 			if (msgType.equals(ShareCircleClientMessageType.REGISTER_CLIENT)) {
 				client = (ClientInfo)message.messageData;
@@ -233,7 +233,7 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 	@Override
 	public void acceptClient(final ClientInfo client) {
 		UserMessage msg = new UserMessage();
-		IoSession session = clientSessionMap.get(client);
+		NioSession session = clientSessionMap.get(client);
 		if (session != null) {
 			msg.messageType = ShareCircleServerMessageType.ACCEPT_JOIN.intValue();
 			sendServerMessage(session, msg);
@@ -244,7 +244,7 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 	
 	@Override
 	public void rejectClient(final ClientInfo client) {
-		IoSession session = clientSessionMap.get(client);
+		NioSession session = clientSessionMap.get(client);
 		UserMessage msg = new UserMessage();
 		msg.messageType = ShareCircleServerMessageType.REJECT_JOIN.intValue();
 		sendServerMessage(session, msg);
@@ -253,7 +253,7 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 	@Override
 	public void informAllAcceptedClients(final ClientInfo client) {
 		UserMessage msg = new UserMessage();
-		IoSession session = clientSessionMap.get(client);
+		NioSession session = clientSessionMap.get(client);
 		if (session != null) {
 			msg.messageType = ShareCircleServerMessageType.CLIENT_JOINED.intValue();
 			for (ClientInfo cInfo : acceptedClients) {
@@ -266,7 +266,7 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 	@Override
 	public void informAllSharedResources(final ClientInfo client) {
 		UserMessage msg = new UserMessage();
-		IoSession session = clientSessionMap.get(client);
+		NioSession session = clientSessionMap.get(client);
 		if (session != null) {
 			msg.messageType = ShareCircleServerMessageType.RESOURCE_ADDED.intValue();
 			for (ResourceInfo rInfo : allSharedResources) {
@@ -282,7 +282,7 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 		//通知所有客户端有客户端退出
 		UserMessage msg = new UserMessage();
 		for (ClientInfo cInfo : acceptedClients) {
-			IoSession ssn = clientSessionMap.get(cInfo);
+			NioSession ssn = clientSessionMap.get(cInfo);
 			if (ssn != null) {
 				msg.messageType = ShareCircleServerMessageType.CLIENT_EXITED.intValue();
 				msg.messageData = client;
@@ -290,7 +290,7 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 			}
 		}
 		//删除所有此客户端共享的资源信息
-		IoSession session = clientSessionMap.get(client);
+		NioSession session = clientSessionMap.get(client);
 		ClientBundle cBundle = clientBundles.get(session);
 		if (cBundle != null) {
 			for (ResourceInfo rInfo : cBundle.sharedResources) {
@@ -302,12 +302,12 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 	
 	private void addShareResource(final ClientInfo client, final ResourceInfo resource) {
 		allSharedResources.add(resource);
-		IoSession session = clientSessionMap.get(client);
+		NioSession session = clientSessionMap.get(client);
 		ClientBundle cBundle = clientBundles.get(session);
 		cBundle.sharedResources.add(resource);
 		UserMessage msg = new UserMessage();
 		for (ClientInfo cInfo : acceptedClients) {
-			IoSession ssn = clientSessionMap.get(cInfo);
+			NioSession ssn = clientSessionMap.get(cInfo);
 			if (ssn != null) {
 				msg.messageType = ShareCircleServerMessageType.RESOURCE_ADDED.intValue();
 				msg.messageData = resource;
@@ -319,7 +319,7 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 	private void removeSharedResource(final ResourceInfo resource) {
 		allSharedResources.remove(resource);
 		UserMessage msg = new UserMessage();
-		IoSession session;
+		NioSession session;
 		for (ClientInfo cInfo : acceptedClients) {
 			session = clientSessionMap.get(cInfo);
 			if (session != null) {
@@ -341,7 +341,7 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 	
 	@Override
 	public void kickOffClient(final ClientInfo client) {
-		IoSession session = clientSessionMap.get(client);
+		NioSession session = clientSessionMap.get(client);
 		UserMessage msg = new UserMessage();
 		msg.messageType = ShareCircleServerMessageType.KICK_OFF.intValue();
 		msg.messageData = client;
@@ -352,7 +352,7 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 	@Override
 	public void distributeDataToAllClients(final byte[] bytes) {
 		UserMessage msg = new UserMessage();
-		IoSession session;
+		NioSession session;
 		for (ClientInfo cInfo : acceptedClients) {
 			session = clientSessionMap.get(cInfo);
 			if (session != null) {
@@ -365,7 +365,7 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 
 	private void distributeDataToOthers(final byte[] bytes, final ClientInfo client) {
 		UserMessage msg = new UserMessage();
-		IoSession session;
+		NioSession session;
 		for (ClientInfo cInfo : acceptedClients) {
 			if (!cInfo.equals(client)) {
 				session = clientSessionMap.get(cInfo);
@@ -381,7 +381,7 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 	@Override
 	public void sendDataToClient(final ClientInfo client, final byte[] bytes) {
 		UserMessage msg = new UserMessage();
-		IoSession session = clientSessionMap.get(client);
+		NioSession session = clientSessionMap.get(client);
 		if (session != null) {
 			msg.messageType = ShareCircleServerMessageType.DATA_PACKET.intValue();
 			msg.messageData = bytes;
@@ -393,7 +393,7 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 	public void destroyServer() {
 		this.isDestroyingServer = true;
 		UserMessage msg = new UserMessage();
-		for (IoSession session : clientBundles.keySet()) {
+		for (NioSession session : clientBundles.keySet()) {
 			if (session != null) {
 				msg.messageType = ShareCircleServerMessageType.SERVER_EXITED.intValue();
 				sendServerMessage(session, msg);
@@ -427,14 +427,14 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 	}
 
 	private void returnShareCircleInfo(final ClientInfo client) {
-		IoSession session = clientSessionMap.get(client);
+		NioSession session = clientSessionMap.get(client);
 		UserMessage msg = new UserMessage();
 		msg.messageType = ShareCircleServerMessageType.RETURN_SHARE_CIRCLE_INFO.intValue();
 		msg.messageData = shareCircleInfo;
 		sendServerMessage(session, msg);
 	}
 	
-	private void sendServerMessage(IoSession session, UserMessage message) {
+	private void sendServerMessage(NioSession session, UserMessage message) {
 		ClientBundle cb = clientBundles.get(session);
 		if (cb != null) {
 			ClientInfo client = cb.clientInfo;
