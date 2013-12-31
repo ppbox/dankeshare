@@ -21,6 +21,7 @@ import com.chainton.dankeshare.util.LogUtil;
 import com.chainton.forest.core.NioSession;
 import com.chainton.forest.core.helper.ForestMessageServer;
 import com.chainton.forest.core.helper.ForestMessageServerEvents;
+import com.chainton.forest.core.message.CoreMessageType;
 import com.chainton.forest.core.message.UserMessage;
 
 /**
@@ -439,7 +440,7 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 		if (cb != null) {
 			ClientInfo client = cb.clientInfo;
 			System.out.println(Thread.currentThread().getId() + " " + LogUtil.logServerMessageSend(message, client));
-			session.sendMessage(message);
+			session.sendMessage(CoreMessageType.USER_MESSAGE, message);
 		}
 	}
 
