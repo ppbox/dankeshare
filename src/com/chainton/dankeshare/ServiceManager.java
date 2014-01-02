@@ -37,7 +37,7 @@ public interface ServiceManager {
 	 * @param maxClients 分享圈允许接入的最大客户端数
 	 * @param createCallback 创建操作回调
 	 */
-	void createShareCircle(CharSequence shareCircleName, ShareCircleType shareCircleType, ShareCircleAppInfo appInfo, ClientInfo selfInfo,
+	void createShareCircle(String shareCircleName, ShareCircleType shareCircleType, ShareCircleAppInfo appInfo, ClientInfo selfInfo,
 			int maxClients, CreateShareCircleCallback createCallback) throws WrongServiceModeException; 
 	
 	/**

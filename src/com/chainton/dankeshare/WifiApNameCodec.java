@@ -16,7 +16,7 @@ public interface WifiApNameCodec {
 	 * @param appInfo 分享圈应用程序信息
 	 * @return 分享圈配置信息
 	 */
-	WifiApShareCircleInfo encodeWifiApName(CharSequence shareCircleName, ShareCircleAppInfo appInfo);
+	WifiApShareCircleInfo encodeWifiApName(String shareCircleName, ShareCircleAppInfo appInfo);
 	
 	/**
 	 * 解码ssid获取分享圈配置信息

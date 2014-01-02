@@ -15,7 +15,7 @@ public class WifiApShareCircleInfo extends LanShareCircleInfo {
 	
 	private String shareKey;
 
-	public WifiApShareCircleInfo(CharSequence name, ShareCircleAppInfo appInfo) {
+	public WifiApShareCircleInfo(String name, ShareCircleAppInfo appInfo) {
 		super(name, ShareCircleType.WIFIAP, appInfo);
 	}
 

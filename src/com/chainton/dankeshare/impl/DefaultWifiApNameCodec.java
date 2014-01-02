@@ -1,6 +1,6 @@
 package com.chainton.dankeshare.impl;
 
-import java.nio.CharBuffer;
+import java.nio.ByteBuffer;
 
 import com.chainton.dankeshare.WifiApNameCodec;
 import com.chainton.dankeshare.data.ShareCircleAppInfo;
@@ -14,10 +14,10 @@ import com.chainton.dankeshare.util.DigestUtils;
  */
 public final class DefaultWifiApNameCodec implements WifiApNameCodec {
 	
-	private static final int SHARE_CIRCLE_NAME_MAX_LENGTH = 6; 
+	private static final int SSID_MAX_LENGTH = 28;
 
 	@Override
-	public WifiApShareCircleInfo encodeWifiApName(CharSequence shareCircleName, ShareCircleAppInfo appInfo) {
+	public WifiApShareCircleInfo encodeWifiApName(String shareCircleName, ShareCircleAppInfo appInfo) {
 		WifiApShareCircleInfo circleInfo = new WifiApShareCircleInfo(shareCircleName, appInfo);
 		circleInfo.setSSID(createSSID(appInfo, circleInfo.getName()));
 		circleInfo.setShareKey(createShareKey(circleInfo.getName(), appInfo));
@@ -26,7 +26,7 @@ public final class DefaultWifiApNameCodec implements WifiApNameCodec {
 
 	@Override
 	public WifiApShareCircleInfo decodeWifiApName(String ssid, ShareCircleAppInfo appInfo) {
-		CharSequence shareCircleName = decodeSSID(ssid, appInfo);
+		String shareCircleName = decodeSSID(ssid, appInfo);
 		if (shareCircleName == "") {
 			return null;
 		} else {
@@ -37,7 +37,7 @@ public final class DefaultWifiApNameCodec implements WifiApNameCodec {
 		}
 	}
 
-	private static String createShareKey(CharSequence shareCircleName, ShareCircleAppInfo appInfo){
+	private static String createShareKey(String shareCircleName, ShareCircleAppInfo appInfo){
 		StringBuilder sb = new StringBuilder();
 		sb.append(appInfo.appId);
 		sb.append(appInfo.name);
@@ -104,7 +104,7 @@ public final class DefaultWifiApNameCodec implements WifiApNameCodec {
 //		return sb.toString();
 //	}
 	
-	private static CharSequence decodeSSID(String ssid, ShareCircleAppInfo appInfo) {
+	private static String decodeSSID(String ssid, ShareCircleAppInfo appInfo) {
 		if (ssid.matches("^[0-9a-f]+$")) {
 			try {
 				byte[] bytes = hexStringToBytes(ssid);
@@ -115,7 +115,7 @@ public final class DefaultWifiApNameCodec implements WifiApNameCodec {
 				if (byteArrayToInt(header) != appInfo.appId) {
 					return "";
 				} else {
-					return byteArrayToCharSequence(body);
+					return new String(body, "UTF-8");
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -157,15 +157,24 @@ public final class DefaultWifiApNameCodec implements WifiApNameCodec {
 //		return sb.toString();
 //	}
 	
-	private static String createSSID(ShareCircleAppInfo appInfo, CharSequence shareCircleName) {
+	private static String createSSID(ShareCircleAppInfo appInfo, String shareCircleName) {
 		try {
 			byte[] header = intToByteArray(appInfo.appId);
 			byte[] body;
-			if (shareCircleName.length() > SHARE_CIRCLE_NAME_MAX_LENGTH) {
-				body = charSequenceToByteArray(shareCircleName.subSequence(0, SHARE_CIRCLE_NAME_MAX_LENGTH));
-			} else {
-				body = charSequenceToByteArray(shareCircleName);
+			int maxBodyLength = SSID_MAX_LENGTH / 2 - 2;
+			ByteBuffer buffer = ByteBuffer.allocate(maxBodyLength);
+			buffer.clear();
+			byte[] chBytes;
+			for (int i = 0; i < shareCircleName.length(); i++) {
+				chBytes = shareCircleName.substring(i, i + 1).getBytes("UTF-8");
+				if (buffer.position() + chBytes.length > maxBodyLength) {
+					break;
+				} else {
+					buffer.put(chBytes);
+				}
 			}
+			buffer.flip();
+			body = buffer.array();
 			byte[] bytes = new byte[header.length + body.length];
 			System.arraycopy(header, 0, bytes, 0, header.length);
 			System.arraycopy(body, 0, bytes, header.length, body.length);
@@ -205,32 +214,11 @@ public final class DefaultWifiApNameCodec implements WifiApNameCodec {
 		int byteValue;
 		int bytesLen = hex.length() / 2;
 		byte[] bytes = new byte[bytesLen];
-		for (int i = 0; i < bytesLen - 1; i++) {
+		for (int i = 0; i < bytesLen; i++) {
 			byteValue = Integer.parseInt(hex.substring(0 + i * 2, 2 + i * 2), 16);
 			bytes[i] = (byte) (byteValue % 0xFF00);
 		}
 		return bytes;
-	}
-	
-	private static byte[] charSequenceToByteArray(CharSequence cs) {
-		byte[] bytes = new byte[cs.length() * 2];
-		char ch;
-		for (int i = 0; i < cs.length(); i++) {
-			ch = cs.charAt(i);
-	        bytes[2 * i] = (byte)((ch >> 4) & 0xFF);
-	        bytes[2 * i + 1] = (byte)(ch & 0xFF);
-		}
-		return bytes;
-	}
-	
-	private static CharSequence byteArrayToCharSequence(byte[] bytes) {
-		char ch;
-		CharBuffer cb = CharBuffer.allocate(bytes.length / 2);
-		for (int i = 0; i < cb.length(); i++) {
-	        ch = (char) (bytes[2 * i] * 256 + bytes[2 * i + 1]);
-	        cb.append(ch);
-		}
-		return cb;
 	}
 	
 //	private static String getFormatChar(char c){

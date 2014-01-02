@@ -18,7 +18,7 @@ public class WifiDirectShareCircleInfo extends LanShareCircleInfo {
 	
 	private WifiP2pDevice device;
 	
-	public WifiDirectShareCircleInfo(CharSequence name, ShareCircleAppInfo appInfo) {
+	public WifiDirectShareCircleInfo(String name, ShareCircleAppInfo appInfo) {
 		super(name, ShareCircleType.WIFIDIRECT, appInfo);
 	}
 

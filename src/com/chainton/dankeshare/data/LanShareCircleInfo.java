@@ -13,7 +13,7 @@ public class LanShareCircleInfo implements ShareCircleInfo {
 	private static final long serialVersionUID = -722385875207029976L;
 	
 	protected final ShareCircleType type;
-	protected CharSequence name;
+	protected String name;
 	protected String ssid;
 	protected String serverIP;
 	protected ShareCircleAppInfo appInfo;
@@ -23,7 +23,7 @@ public class LanShareCircleInfo implements ShareCircleInfo {
 	protected int acceptedClients;
 	protected int maxClients;
 	
-	public LanShareCircleInfo(CharSequence shareCircleName, ShareCircleType type, ShareCircleAppInfo appInfo) {
+	public LanShareCircleInfo(String shareCircleName, ShareCircleType type, ShareCircleAppInfo appInfo) {
 		this.name = shareCircleName;
 		this.type = type;
 		this.appInfo = appInfo;
@@ -32,12 +32,12 @@ public class LanShareCircleInfo implements ShareCircleInfo {
 	}
 
 	@Override
-	public CharSequence getName() {
+	public String getName() {
 		return name;
 	}
 	
 	@Override
-	public void setName(CharSequence name) {
+	public void setName(String name) {
 		this.name = name;
 	}
 

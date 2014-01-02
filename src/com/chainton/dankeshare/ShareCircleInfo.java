@@ -19,13 +19,13 @@ public interface ShareCircleInfo extends Serializable {
 	 * 取得分享圈名字
 	 * @return 分享圈名字
 	 */
-	CharSequence getName();
+	String getName();
 
 	/**
 	 * 设置分享圈名字
 	 * @param name 分享圈名字
 	 */
-	void setName(CharSequence name);
+	void setName(String name);
 
 	/**
 	 * 取得分享圈类型

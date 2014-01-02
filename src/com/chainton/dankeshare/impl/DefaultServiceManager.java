@@ -147,7 +147,7 @@ public final class DefaultServiceManager implements ServiceManager {
 	}
 
 	@Override
-	public void createShareCircle(final CharSequence shareCircleName, final ShareCircleType shareCircleType,
+	public void createShareCircle(final String shareCircleName, final ShareCircleType shareCircleType,
 			final ShareCircleAppInfo appInfo, final ClientInfo selfInfo, final int maxClients,
 			final CreateShareCircleCallback createCallback) throws WrongServiceModeException {
 		if (!this.opMode.equals(ServiceManagerOpMode.AS_SERVER)) {
