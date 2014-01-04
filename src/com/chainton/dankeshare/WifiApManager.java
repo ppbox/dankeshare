@@ -18,7 +18,7 @@ public interface WifiApManager {
 		/**
 		 * 热点打开成功时回调
 		 */
-		void onStartSuccessed();
+		void onStartSucceed();
 		
 		/**
 		 * 热点打开失败时回调
@@ -33,9 +33,13 @@ public interface WifiApManager {
 	 */
 	interface WifiApCloseListener{
 		/**
-		 * 热点已关闭时回调
+		 * 热点关闭成功回调
 		 */
-		void onStop();
+		void onCloseSucceed();
+		/**
+		 * 热点关闭失败回调
+		 */
+		void onCloseFailed();
 	}
 	
 	/**

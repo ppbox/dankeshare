@@ -10,8 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -36,6 +34,7 @@ import com.chainton.dankeshare.ShareCircleClient;
 import com.chainton.dankeshare.ShareCircleInfo;
 import com.chainton.dankeshare.ShareCircleServer;
 import com.chainton.dankeshare.WifiApManager;
+import com.chainton.dankeshare.WifiApManager.WifiApCloseListener;
 import com.chainton.dankeshare.WifiConnectManager;
 import com.chainton.dankeshare.WifiDirectConnectCallback;
 import com.chainton.dankeshare.WifiDirectManager;
@@ -46,6 +45,7 @@ import com.chainton.dankeshare.data.WifiApShareCircleInfo;
 import com.chainton.dankeshare.data.WifiDirectShareCircleInfo;
 import com.chainton.dankeshare.data.enums.ShareCircleType;
 import com.chainton.dankeshare.exception.WrongServiceModeException;
+import com.chainton.dankeshare.util.GlobalUtil;
 
 /**
  * 分享圈服务包装接口的缺省实现
@@ -70,12 +70,15 @@ public final class DefaultServiceManager implements ServiceManager {
 	 * 单例锁
 	 */
 	private static final Object LOCK = new Object();
+	/**
+	 * 查找分享圈的超时时间（秒）
+	 */
+	private static final int SEARCH_SHARE_CIRCLE_TIMEOUT = 4;
 
 	private ServiceManagerOpMode opMode;
 	private WifiDirectManager wifiDirectManager;
 	private WifiApManager wifiApManager;
 	private WifiConnectManager wifiConnectManager;
-	private final ExecutorService executorService;
 	private final DefaultWifiApNameCodec apNameCodec = new DefaultWifiApNameCodec();
 	private final Handler handler;
 	private Map<String, ScanResult> queriedScanResults;
@@ -98,7 +101,6 @@ public final class DefaultServiceManager implements ServiceManager {
 			e.printStackTrace();
 		}
 		this.wifiConnectManager = manager;
-		this.executorService = Executors.newCachedThreadPool();
 		this.queriedScanResults = new ConcurrentHashMap<String, ScanResult>();
 		this.validShareCircles = new ConcurrentHashMap<String, ShareCircleInfo>();
 		this.handler = new Handler(context.getMainLooper());
@@ -153,60 +155,51 @@ public final class DefaultServiceManager implements ServiceManager {
 		if (!this.opMode.equals(ServiceManagerOpMode.AS_SERVER)) {
 			throw new WrongServiceModeException("Cannot create ShareCircle in client mode.");
 		}
-		executorService.execute(new Runnable() {
-			@Override
-			public void run() {
-				if (shareCircleType.equals(ShareCircleType.WIFIAP)) {
-					final WifiApShareCircleInfo waci = apNameCodec.encodeWifiApName(shareCircleName, appInfo);
-					WifiConfiguration config = wifiApManager.createWifiApConfig(waci.getSSID(), waci.getShareKey());
-					Log.d("ShareService", "Create SSID " + waci.getSSID() + " with sharedKey " + waci.getShareKey());
-					wifiApManager.openWifiAp(config,
-							new WifiApManager.WifiApOpenListener() {
-
-								@Override
-								public void onStartSuccessed() {
-									try {
-										String ip = wifiApManager.getApLocalIp();
-										selfInfo.setIp(ip);
-										waci.setServerIP(ip);
-										final ShareCircleServer server = new DefaultShareCircleServer(waci, selfInfo, maxClients);
-										final ShareCircleClient client = new DefaultShareCircleClient(selfInfo, handler);
-										handler.post(new Runnable() {
-											@Override
-											public void run() {
-												createCallback.onShareCircleCreateSuccess(waci, server, client);
-											}
-										});
-									} catch (Exception e) {
-										Log.i("mytest", "start service failed", e);
-										handler.post(new Runnable() {
-
-											@Override
-											public void run() {
-												createCallback.onShareCircleCreateFailed();
-											}
-										});
-									}
-								}
-
-								@Override
-								public void onStartFailed() {
-									handler.post(new Runnable() {
-
-										@Override
-										public void run() {
-											createCallback.onShareCircleCreateFailed();
-										}
-									});
-								}
-
-							});
-				} else if (shareCircleType.equals(ShareCircleType.WIFIDIRECT)) {
-					// 直连里没有什么分享圈要创建，但想作为服务端的要调用这方法，标记它作为服务端
-					isServer = true;
+		if (shareCircleType.equals(ShareCircleType.WIFIAP)) {
+			wifiApManager.saveWifiState();
+			final WifiApShareCircleInfo waci = apNameCodec.encodeWifiApName(shareCircleName, appInfo);
+			WifiConfiguration config = wifiApManager.createWifiApConfig(waci.getSSID(), waci.getShareKey());
+			Log.d("ShareService", "Create SSID " + waci.getSSID() + " with sharedKey " + waci.getShareKey());
+			wifiApManager.openWifiAp(config, new WifiApManager.WifiApOpenListener() {
+				@Override
+				public void onStartSucceed() {
+					try {
+						String ip = wifiApManager.getApLocalIp();
+						selfInfo.setIp(ip);
+						waci.setServerIP(ip);
+						final ShareCircleServer server = new DefaultShareCircleServer(waci, selfInfo, maxClients);
+						final ShareCircleClient client = new DefaultShareCircleClient(selfInfo, handler);
+						handler.post(new Runnable() {
+							@Override
+							public void run() {
+								createCallback.onShareCircleCreateSuccess(waci, server, client);
+							}
+						});
+					} catch (Exception e) {
+						Log.i("mytest", "start service failed", e);
+						handler.post(new Runnable() {
+							@Override
+							public void run() {
+								createCallback.onShareCircleCreateFailed();
+							}
+						});
+					}
 				}
-			}
-		});
+				@Override
+				public void onStartFailed() {
+					wifiApManager.restoreWifiState();
+					handler.post(new Runnable() {
+						@Override
+						public void run() {
+							createCallback.onShareCircleCreateFailed();
+						}
+					});
+				}
+			});
+		} else if (shareCircleType.equals(ShareCircleType.WIFIDIRECT)) {
+			// 直连里没有什么分享圈要创建，但想作为服务端的要调用这方法，标记它作为服务端
+			isServer = true;
+		}
 	}
 
 	@Override
@@ -217,68 +210,15 @@ public final class DefaultServiceManager implements ServiceManager {
 		this.queriedScanResults.clear();
 		this.validShareCircles.clear();
 		if (searchReceiver == null) {
-			searchReceiver = new BroadcastReceiver() {
+			// 搜索WifiAp分享圈
+			this.wifiApManager.closeWifiAp(new WifiApCloseListener() {
 				@Override
-				public void onReceive(Context context, Intent intent) {
-					Log.d("ShareService", "On received broadcast...");
-					WifiManager wifiManager = (WifiManager) context
-							.getSystemService(Context.WIFI_SERVICE);
-					List<ScanResult> wifiAps = wifiManager.getScanResults();
-					for (ScanResult sr : wifiAps) {
-						if (!queriedScanResults.containsKey(sr.SSID)) {
-							Log.d("ShareService", "Found useable SSID: " + sr.SSID);
-							final WifiApShareCircleInfo waci = apNameCodec.decodeWifiApName(sr.SSID, appInfo);
-							if (waci != null) {
-								Log.d("ShareService", "Found usable wifiAP: " + waci.getName());
-								queriedScanResults.put(sr.SSID, sr);
-								validShareCircles.put(sr.SSID, waci);
-								callback.onFoundShareCircle(waci);
-							}
-						}
-					}
+				public void onCloseSucceed() {
+					searchWifiApShareCircle(appInfo, callback);
 				}
-			};
-			context.registerReceiver(searchReceiver, new IntentFilter(
-					WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
-			executorService.execute(new Runnable() {
 				@Override
-				public void run() {
-					Log.d("ShareService", "Start searching...");
-					wifiConnectManager.searchWifiAp();
-//					for (int i = 0; i < 5; i++) {
-//						try {
-//							Thread.sleep(5000);
-//							if (validShareCircles.size() == 0) {
-//								wifiConnectManager.searchWifiAp();
-//							} else {
-//								break;
-//							}
-//						} catch (InterruptedException e) {
-//							e.printStackTrace();
-//						}
-//					}
-					try {
-						Thread.sleep(4000);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-					if (validShareCircles.isEmpty()) {
-						handler.post(new Runnable() {
-							@Override
-							public void run() {
-								callback.onSearchTimeout();
-							}
-						});
-					} else {
-						handler.post(new Runnable() {
-							@Override
-							public void run() {
-								callback.onSearchSucceed(validShareCircles.values());
-							}
-						});
-					}
-					context.unregisterReceiver(searchReceiver);
-					searchReceiver = null;
+				public void onCloseFailed() {
+					callback.onSearchTimeout();
 				}
 			});
 		}
@@ -304,6 +244,59 @@ public final class DefaultServiceManager implements ServiceManager {
 		}
 	}
 	
+	private void searchWifiApShareCircle(final ShareCircleAppInfo appInfo, final SearchShareCircleCallback callback) {
+		searchReceiver = new BroadcastReceiver() {
+			@Override
+			public void onReceive(Context context, Intent intent) {
+				Log.d("ShareService", "On received broadcast...");
+				WifiManager wifiManager = (WifiManager) context
+						.getSystemService(Context.WIFI_SERVICE);
+				List<ScanResult> wifiAps = wifiManager.getScanResults();
+				for (ScanResult sr : wifiAps) {
+					if (!queriedScanResults.containsKey(sr.SSID)) {
+						Log.d("ShareService", "Found useable SSID: " + sr.SSID);
+						final WifiApShareCircleInfo waci = apNameCodec.decodeWifiApName(sr.SSID, appInfo);
+						if (waci != null) {
+							Log.d("ShareService", "Found usable wifiAP: " + waci.getName());
+							queriedScanResults.put(sr.SSID, sr);
+							validShareCircles.put(sr.SSID, waci);
+							callback.onFoundShareCircle(waci);
+						}
+					}
+				}
+			}
+		};
+		context.registerReceiver(searchReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+		Log.d("ShareService", "Start searching ShareCircle...");
+		wifiConnectManager.searchWifiAp();
+		int timeoutCount = 0;
+		while (validShareCircles.isEmpty() && timeoutCount < SEARCH_SHARE_CIRCLE_TIMEOUT) {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			timeoutCount++;
+		}
+		context.unregisterReceiver(searchReceiver);
+		searchReceiver = null;
+		if (validShareCircles.isEmpty()) {
+			handler.post(new Runnable() {
+				@Override
+				public void run() {
+					callback.onSearchTimeout();
+				}
+			});
+		} else {
+			handler.post(new Runnable() {
+				@Override
+				public void run() {
+					callback.onSearchSucceed(validShareCircles.values());
+				}
+			});
+		}
+	}
+	
 	@Override
 	public void createShareCircleClient(final ShareCircleInfo circleInfo,
 			final ClientInfo selfInfo,
@@ -311,10 +304,14 @@ public final class DefaultServiceManager implements ServiceManager {
 		if (!this.opMode.equals(ServiceManagerOpMode.AS_CLIENT)) {
 			throw new WrongServiceModeException("Cannot create more client in server mode.");
 		}
-		executorService.execute(new Runnable() {
+		this.wifiApManager.closeWifiAp(new WifiApCloseListener() {
 			@Override
-			public void run() {
+			public void onCloseSucceed() {
 				createShareCircleClientInBackground(circleInfo, selfInfo, callback);
+			}
+			@Override
+			public void onCloseFailed() {
+				callback.onFailure();
 			}
 		});
 	}
@@ -323,45 +320,36 @@ public final class DefaultServiceManager implements ServiceManager {
 			final ClientInfo selfInfo,
 			final CreateShareCircleClientCallback callback) {
 		if (circleInfo.getShareCircleType().equals(ShareCircleType.WIFIAP)) {
-			executorService.execute(new Runnable() {
+			ScanResult scanResult = queriedScanResults.get(circleInfo.getSSID());
+			WifiApShareCircleInfo waci = (WifiApShareCircleInfo)circleInfo;
+			wifiConnectManager.connectWifi(scanResult, waci.getShareKey(), new WifiConnectManager.ConnectCallback() {
 				@Override
-				public void run() {
-					ScanResult scanResult = queriedScanResults.get(circleInfo.getSSID());
-					WifiApShareCircleInfo waci = (WifiApShareCircleInfo)circleInfo;
-					wifiConnectManager.connectWifi(scanResult, waci.getShareKey(),
-							new WifiConnectManager.ConnectCallback() {
+				public void onConnectSuccess(String ssid, String gatewayIp, String localIp) {
+					Log.d("ShareService", "On connect success...");
+					circleInfo.setServerIP(gatewayIp);
+					selfInfo.setIp(localIp);
+					final ShareCircleClient client = new DefaultShareCircleClient(selfInfo, handler);
+					handler.post(new Runnable() {
+						public void run() {
+							callback.onSuccess(circleInfo, client);
+						}
+					});
+				}
 
-								@Override
-								public void onConnectSuccess(String ssid, String gatewayIp, String localIp) {
-									Log.d("ShareService", "On connect success...");
-									circleInfo.setServerIP(gatewayIp);
-									selfInfo.setIp(localIp);
-									final ShareCircleClient client = new DefaultShareCircleClient(selfInfo, handler);
-									handler.post(new Runnable() {
-										public void run() {
-											callback.onSuccess(circleInfo, client);
-										}
-									});
-								}
-
-								@Override
-								public void onConnectFailed(String errorMessage) {
-									Log.d("ShareService", errorMessage);
-									handler.post(new Runnable() {
-										public void run() {
-											callback.onFailure();
-										}
-									});
-								}
-							});
+				@Override
+				public void onConnectFailed(String errorMessage) {
+					Log.d("ShareService", errorMessage);
+					handler.post(new Runnable() {
+						public void run() {
+							callback.onFailure();
+						}
+					});
 				}
 			});
 		} else if(circleInfo.getShareCircleType().equals(ShareCircleType.WIFIDIRECT)) {
 			if(wifiDirectManager != null){
-				final WifiP2pDevice device = ((WifiDirectShareCircleInfo) circleInfo)
-						.getDevice();
+				final WifiP2pDevice device = ((WifiDirectShareCircleInfo) circleInfo).getDevice();
 				wifiDirectManager.setConnectionInfoListener(new ConnectionInfoListener() {
-					
 					@Override
 					public void onConnectionInfoAvailable(WifiP2pInfo info) {
 						// 自己是不是 GroupOwner，若是返回 true
@@ -388,7 +376,6 @@ public final class DefaultServiceManager implements ServiceManager {
 								client = null;
 							}
 							wifiDirectManager.connect(device, new WifiDirectConnectCallback() {
-
 								@Override
 								public void onSuccess() {
 									handler.post(new Runnable() {
@@ -397,7 +384,6 @@ public final class DefaultServiceManager implements ServiceManager {
 										}
 									});
 								}
-
 								@Override
 								public void onFailure() {
 									handler.post(new Runnable() {
@@ -406,7 +392,6 @@ public final class DefaultServiceManager implements ServiceManager {
 										}
 									});
 								}
-								
 							});
 						}
 					}
@@ -440,7 +425,7 @@ public final class DefaultServiceManager implements ServiceManager {
 	}
 	
 	private void createSocket(final String groupOwnerIp) {
-		new Thread() {
+		GlobalUtil.threadExecutor().execute(new Runnable() {
 			public void run() {
 				boolean succ = false; // 是否连接成功
 				Socket socket = new Socket();
@@ -476,11 +461,11 @@ public final class DefaultServiceManager implements ServiceManager {
 					}
 				}
 			}
-		}.start();
+		});
 	}
 
 	private void createServerSocket() {
-		new Thread() {
+		GlobalUtil.threadExecutor().execute(new Runnable() {
 			public void run() {
 				try {
 					ServerSocket serverSocket = new ServerSocket(8989);
@@ -493,7 +478,7 @@ public final class DefaultServiceManager implements ServiceManager {
 					e.printStackTrace();
 				}
 			}
-		}.start();
+		});
 	}
 
 }

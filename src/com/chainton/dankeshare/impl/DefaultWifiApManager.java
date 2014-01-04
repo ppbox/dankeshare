@@ -21,6 +21,7 @@ import android.util.SparseArray;
 
 import com.chainton.dankeshare.WifiApManager;
 import com.chainton.dankeshare.WifiConnectManager;
+import com.chainton.dankeshare.util.GlobalUtil;
 import com.chainton.dankeshare.util.NetworkUtil;
 
 /**
@@ -29,6 +30,7 @@ import com.chainton.dankeshare.util.NetworkUtil;
  *
  */
 public final class DefaultWifiApManager implements WifiApManager, WifiConnectManager {
+	
 	private static final int WIFI_AP_STATE_DISABLING = 0;
 	private static final int WIFI_AP_STATE_DISABLING_VER4 = 10;
 	private static final int WIFI_AP_STATE_DISABLED = 1;
@@ -39,6 +41,19 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 	private static final int WIFI_AP_STATE_ENABLED_VER4 = 13;
 	private static final int WIFI_AP_STATE_FAILED = 4;
 	private static final int WIFI_AP_STATE_FAILED_VER4 = 14;
+	
+	/**
+	 * 打开WIFI热点超时时间（秒）
+	 */
+	private static final int OPEN_WIFI_AP_TIMEOUT = 15;
+	/**
+	 * 关闭WIFI热点超时时间（秒）
+	 */
+	private static final int CLOSE_WIFI_AP_TIMEOUT = 4;
+	/**
+	 * 检查WIFI连接超时时间（秒）
+	 */
+	private static final int VALIDATE_WIFI_CONNECTION_TIMEOUT = 10;
 	
 	/**
 	 * android上下文
@@ -100,75 +115,81 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 	@Override
 	public void openWifiAp(WifiConfiguration config, final WifiApOpenListener openListener) {
 		WifiConfiguration currentConfig = getConfig();
-		if(getCurrentStatus() == WifiApStatus.DISABLED || (currentConfig != null && !isEqualsSSID(config.SSID, currentConfig.SSID))){
-			if(setWifiApEnabled(config, true)){
-				new Thread(){
-
+		if (getCurrentStatus() == WifiApStatus.DISABLED || (currentConfig != null && !isEqualsSSID(config.SSID, currentConfig.SSID))) {
+			if (setWifiApEnabled(config, true)) {
+				GlobalUtil.threadExecutor().execute(new Runnable() {
 					@Override
 					public void run() {
-						long start = System.currentTimeMillis();
-						while(System.currentTimeMillis() - start < 30000){
-							int state = getWifiApState();
-							if(statusArray.get(state) == WifiApStatus.ENABLED){
+						int timeoutCount = 0;
+						boolean openSucceed = false;
+						int state = -1;
+						while (timeoutCount < OPEN_WIFI_AP_TIMEOUT) {
+							state = getWifiApState();
+							if (statusArray.get(state) == WifiApStatus.ENABLED) {
+								openSucceed = true;
 								break;
-							}
-							try{
-								sleep(500);
-							}catch(Exception e){
-								e.printStackTrace();
+							} else {
+								try {
+									Thread.sleep(1000);
+								} catch(Exception e) {
+									e.printStackTrace();
+								}
+								timeoutCount++;
 							}
 						}
-						int state = getWifiApState();
-						if(statusArray.get(state) == WifiApStatus.ENABLED){
-							if(openListener != null){
-								openListener.onStartSuccessed();
-							}
-						} else {
-							if(openListener != null){
+						if (openListener != null) {
+							if (openSucceed) {
+								openListener.onStartSucceed();
+							} else {
 								openListener.onStartFailed();
 							}
 						}
 					}
-					
-				}.start();
+				});
 			} else {
-				if(openListener != null){
+				if (openListener != null) {
 					openListener.onStartFailed();
 				}
 			}
 		} else {
-			if(openListener != null){
-				openListener.onStartSuccessed();
+			if (openListener != null) {
+				openListener.onStartSucceed();
 			}
 		}
 	}
 
 	@Override
 	public void closeWifiAp(final WifiApCloseListener closeListener) {
-		setWifiApEnabled(null, false);
-		new Thread(){
-
+		GlobalUtil.threadExecutor().execute(new Runnable() {
 			@Override
 			public void run() {
-				while(true){
-					int state = getWifiApState();
-					if(statusArray.get(state) == WifiApStatus.DISABLED){
+				boolean closeSucceed = false;
+				int timeoutCount = 0;
+				int state = -1;
+				while (timeoutCount < CLOSE_WIFI_AP_TIMEOUT) {
+					state = getWifiApState();
+					if (statusArray.get(state) == WifiApStatus.DISABLED) {
+						closeSucceed = true;
 						break;
 					} else {
 						setWifiApEnabled(null, false);
-					}
-					try{
-						sleep(500);
-					}catch(Exception e){
-						e.printStackTrace();
+						try {
+							Thread.sleep(1000);
+						} catch(Exception e) {
+							e.printStackTrace();
+						}
+						timeoutCount++;
 					}
 				}
-				if(closeListener != null){
-					closeListener.onStop();
+				if (closeListener != null) {
+					if (closeSucceed) {
+						closeListener.onCloseSucceed();
+					} else {
+						closeListener.onCloseFailed();
+					}
 				}
 			}
-			
-		}.start();
+		});
 	}
 	
 	/**
@@ -194,9 +215,6 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 	@Override
 	public void connectWifi(final ScanResult scanResult, String shareKey, final ConnectCallback callback) {
 		final WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-		if (isWifiApEnabled()) {
-			closeWifiAp(null);
-		}
 		Log.d("ShareService", "Start connect to " + scanResult.SSID + " shareKey: " + shareKey);
 		wifiManager.setWifiEnabled(true);
 		WifiInfo wi = wifiManager.getConnectionInfo();
@@ -255,17 +273,15 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 				return;
 			}
 		}
-		
 		/**
 		 * 异步线程, 等待连接的状态变化, 超时判断以及校验连接的有效性,并调用响应的回调方法
 		 */
-		new Thread(){
-
+		GlobalUtil.threadExecutor().execute(new Runnable() {
 			@Override
 			public void run() {
-				long start = System.currentTimeMillis();
-				while(System.currentTimeMillis() - start < 30000){
-					if(wifiManager.getWifiState() == WifiManager.WIFI_STATE_ENABLED){
+				int timeoutCount = 0;
+				while (timeoutCount < VALIDATE_WIFI_CONNECTION_TIMEOUT) {
+					if (wifiManager.getWifiState() == WifiManager.WIFI_STATE_ENABLED) {
 						WifiInfo wi = wifiManager.getConnectionInfo();
 						if (wi != null && wi.getSSID() != null) {
 							if (isEqualsSSID(scanResult.SSID, wi.getSSID())) {
@@ -276,14 +292,14 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 						}
 					}
 					try {
-						sleep(1000);
+						Thread.sleep(1000);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
+					timeoutCount++;
 				}
 			}
-			
-		}.start();
+		});
 	}
 
 	/**
@@ -350,23 +366,37 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 			wifiApIsEnabled = isWifiApEnabled();
 			apConfig = getConfig();
 			wifiIsEnabled = isWifiConnected();
-			if(wifiIsEnabled){
+			if (wifiIsEnabled) {
 				wifiId = getCurrentWifiId();
 			}
 		}
 		
 		void restore(){
-			if(mobileDataisEnabled){
+			if (mobileDataisEnabled) {
 				setMobileDataStatus(mobileDataisEnabled);
 			}
 			setConfig(apConfig);
-			if(wifiApIsEnabled){
-				openWifiAp(apConfig, null);
+			if (wifiApIsEnabled) {
+				openWifiAp(apConfig, new WifiApOpenListener() {
+					@Override
+					public void onStartSucceed() {
+					}
+					@Override
+					public void onStartFailed() {
+					}
+				});
 			} else {
-				closeWifiAp(null);
-			}
-			if(wifiIsEnabled){
-				connectToAp(wifiId);
+				closeWifiAp(new WifiApCloseListener() {
+					@Override
+					public void onCloseSucceed() {
+						if (wifiIsEnabled) {
+							connectToAp(wifiId);
+						}
+					}
+					@Override
+					public void onCloseFailed() {
+					}
+				});
 			}
 		}
 	}
@@ -530,8 +560,7 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 		}
 		try {  
 			configHtcWithKey(config);
-            Method method = wifiManager.getClass().getMethod(  
-                    "setWifiApEnabled", WifiConfiguration.class, Boolean.TYPE);  
+            Method method = wifiManager.getClass().getMethod("setWifiApEnabled", WifiConfiguration.class, Boolean.TYPE);  
             return (Boolean) method.invoke(wifiManager, config, isEnabled);  
         } catch (Exception e) {
         	e.printStackTrace();
