@@ -105,11 +105,6 @@ public interface ShareCircleClient {
 	void getAllClients();
 	
 	/**
-	 * 主动退出分享圈
-	 */
-	void exitShareCircle();
-	
-	/**
 	 * 下载资源
 	 * @param resource 资源信息
 	 * @param destPath 目标路径

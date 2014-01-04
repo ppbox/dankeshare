@@ -240,6 +240,7 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 	
 	@Override
 	public void disconnect() {
+		this.exitShareCircle();
 		this.messageClient.disconnect();
 	}
 	
@@ -322,8 +323,7 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 		return myShare.contains(info.getUrl());
 	}
 
-	@Override
-	public void exitShareCircle() {
+	private void exitShareCircle() {
 		if (httpFileServer != null) {
 			httpFileServer.stop();
 			httpFileServer = null;
