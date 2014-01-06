@@ -2,6 +2,7 @@ package com.chainton.dankeshare;
 
 import java.util.List;
 
+import com.chainton.dankeshare.WifiApManager.WifiApCloseListener;
 import com.chainton.dankeshare.data.ClientInfo;
 import com.chainton.dankeshare.data.ServiceManagerOpMode;
 import com.chainton.dankeshare.data.ShareCircleAppInfo;
@@ -75,5 +76,11 @@ public interface ServiceManager {
 	 * 反注册wifi direct的广播
 	 */
 	void unRegisterWifiDirect();
+	
+	/**
+	 * 关闭WIFI热点
+	 * @param closeListener 关闭处理回调实例
+	 */
+	void closeWifiAp(WifiApCloseListener closeListener);
 	
 }

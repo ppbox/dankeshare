@@ -480,4 +480,9 @@ public final class DefaultServiceManager implements ServiceManager {
 		});
 	}
 
+	@Override
+	public void closeWifiAp(WifiApCloseListener closeListener) {
+		this.wifiApManager.closeWifiAp(closeListener);
+	}
+
 }

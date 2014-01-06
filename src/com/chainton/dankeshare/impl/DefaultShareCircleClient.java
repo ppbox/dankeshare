@@ -50,6 +50,7 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 	private volatile ClientMessageHandler clientMessageHandler;
 	private volatile Handler osHandler;
 	private ShareServiceFileServer httpFileServer = null;
+	private boolean disconnectByUser;
 	
 	public DefaultShareCircleClient(ClientInfo myInfo, Handler handler) {
 		this.messageClient = new ForestMessageClient(this.clientEventsHandler);
@@ -85,7 +86,11 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 			osHandler.post(new Runnable() {
 				@Override
 				public void run() {
-					shareCircleClientCallback.onSessionClosed();
+					if (disconnectByUser) {
+						shareCircleClientCallback.onDisconnectedByUser();
+					} else {
+						shareCircleClientCallback.onSessionClosed();
+					}
 				}
 			});
 		}
@@ -216,6 +221,7 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 	@Override
 	public void connectToServer(String sIP) {
 		this.messageClient.connectToServer(sIP);
+		this.disconnectByUser = false;
 	}
 	
 	@Override
@@ -242,6 +248,7 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 	public void disconnect() {
 		this.exitShareCircle();
 		this.messageClient.disconnect();
+		this.disconnectByUser = true;
 	}
 	
 	private void registerClient() {

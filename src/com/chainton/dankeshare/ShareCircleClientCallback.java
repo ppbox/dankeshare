@@ -53,5 +53,10 @@ public interface ShareCircleClientCallback {
 	 * @param cause 异常信息实例
 	 */
 	void onSessionExceptionCaught(Throwable cause);
+	
+	/**
+	 * 当客户端主动断开与服务器连接时回调
+	 */
+	void onDisconnectedByUser();
 
 }
