@@ -43,6 +43,22 @@ public interface WifiApManager {
 	}
 	
 	/**
+	 * 恢复Wifi状态处理结果回调
+	 * @author Rivers
+	 *
+	 */
+	interface RestoreWifiStateResult {
+		/**
+		 * 恢复成功回调
+		 */
+		void onSucceed();
+		/**
+		 * 恢复失败回调
+		 */
+		void onFailed();
+	}
+	
+	/**
 	 * 创建热点配置信息
 	 * @param ssid 要创建的热点的ssid
 	 * @param shareKey 要创建的热点的密码
@@ -71,7 +87,7 @@ public interface WifiApManager {
 	/**
 	 * 恢复之前保存的WIFI配置
 	 */
-	void restoreWifiState();
+	void restoreWifiState(RestoreWifiStateResult result);
 	
 	/**
 	 * 获取本地ip地址

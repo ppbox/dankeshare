@@ -371,7 +371,7 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 			}
 		}
 		
-		void restore(){
+		void restore(final RestoreWifiStateResult result){
 			if (mobileDataisEnabled) {
 				setMobileDataStatus(mobileDataisEnabled);
 			}
@@ -380,9 +380,11 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 				openWifiAp(apConfig, new WifiApOpenListener() {
 					@Override
 					public void onStartSucceed() {
+						result.onSucceed();
 					}
 					@Override
 					public void onStartFailed() {
+						result.onFailed();
 					}
 				});
 			} else {
@@ -392,9 +394,11 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 						if (wifiIsEnabled) {
 							connectToAp(wifiId);
 						}
+						result.onSucceed();
 					}
 					@Override
 					public void onCloseFailed() {
+						result.onFailed();
 					}
 				});
 			}
@@ -410,9 +414,9 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 	}
 
 	@Override
-	public void restoreWifiState() {
+	public void restoreWifiState(RestoreWifiStateResult result) {
 		if(oldNetInfo != null){
-			oldNetInfo.restore();
+			oldNetInfo.restore(result);
 		}
 	}
 	
@@ -725,4 +729,5 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 		}
 		return false;
 	}
+
 }

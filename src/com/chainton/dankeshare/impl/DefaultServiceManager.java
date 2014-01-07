@@ -34,6 +34,7 @@ import com.chainton.dankeshare.ShareCircleClient;
 import com.chainton.dankeshare.ShareCircleInfo;
 import com.chainton.dankeshare.ShareCircleServer;
 import com.chainton.dankeshare.WifiApManager;
+import com.chainton.dankeshare.WifiApManager.RestoreWifiStateResult;
 import com.chainton.dankeshare.WifiApManager.WifiApCloseListener;
 import com.chainton.dankeshare.WifiConnectManager;
 import com.chainton.dankeshare.WifiDirectConnectCallback;
@@ -186,7 +187,14 @@ public final class DefaultServiceManager implements ServiceManager {
 				}
 				@Override
 				public void onStartFailed() {
-					wifiApManager.restoreWifiState();
+					wifiApManager.restoreWifiState(new RestoreWifiStateResult() {
+						@Override
+						public void onSucceed() {
+						}
+						@Override
+						public void onFailed() {
+						}
+					});
 					handler.post(new Runnable() {
 						@Override
 						public void run() {
@@ -405,8 +413,8 @@ public final class DefaultServiceManager implements ServiceManager {
 	}
 
 	@Override
-	public void restoreWifiState() {
-		wifiApManager.restoreWifiState();
+	public void restoreWifiState(RestoreWifiStateResult result) {
+		wifiApManager.restoreWifiState(result);
 	}
 
 	@Override

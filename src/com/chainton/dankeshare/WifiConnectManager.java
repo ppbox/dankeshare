@@ -1,5 +1,7 @@
 package com.chainton.dankeshare;
 
+import com.chainton.dankeshare.WifiApManager.RestoreWifiStateResult;
+
 import android.net.wifi.ScanResult;
 
 /**
@@ -51,5 +53,6 @@ public interface WifiConnectManager {
 	/**
 	 * 恢复之前保存的WIFI配置
 	 */
-	void restoreWifiState();
+	void restoreWifiState(RestoreWifiStateResult result);
+	
 }

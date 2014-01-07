@@ -2,6 +2,7 @@ package com.chainton.dankeshare;
 
 import java.util.List;
 
+import com.chainton.dankeshare.WifiApManager.RestoreWifiStateResult;
 import com.chainton.dankeshare.WifiApManager.WifiApCloseListener;
 import com.chainton.dankeshare.data.ClientInfo;
 import com.chainton.dankeshare.data.ServiceManagerOpMode;
@@ -65,7 +66,7 @@ public interface ServiceManager {
 	/**
 	 * 恢复之前保存的WIFI配置
 	 */
-	void restoreWifiState();
+	void restoreWifiState(RestoreWifiStateResult result);
 	
 	/**
 	 * 注册wifi direct的广播
