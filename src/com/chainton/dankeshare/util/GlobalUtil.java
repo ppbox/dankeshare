@@ -12,6 +12,8 @@ import java.util.concurrent.Executors;
  */
 public class GlobalUtil {
 	
+	public static String LOG_TAG = "ShareService"; 
+	
 	private static ExecutorService executorService = null;
 	
 	public static ExecutorService threadExecutor() {

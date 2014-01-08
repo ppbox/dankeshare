@@ -19,6 +19,7 @@ import com.chainton.dankeshare.data.ResourceInfo;
 import com.chainton.dankeshare.data.enums.ClientStatus;
 import com.chainton.dankeshare.data.enums.ShareCircleClientMessageType;
 import com.chainton.dankeshare.data.enums.ShareCircleServerMessageType;
+import com.chainton.dankeshare.util.GlobalUtil;
 import com.chainton.dankeshare.util.LogUtil;
 import com.chainton.forest.core.NioSession;
 import com.chainton.forest.core.helper.ForestMessageClient;
@@ -74,14 +75,14 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 
 		@Override
 		public void onSessionOpened(NioSession session) {
-			Log.d("ShareService", Thread.currentThread().getId() + " Client " + myInfo.getIp() + " session opened.");
+			Log.d(GlobalUtil.LOG_TAG, Thread.currentThread().getId() + " Client " + myInfo.getIp() + " session opened.");
 			clientStatus = ClientStatus.CONNECTED;
 			registerClient();
 		}
 
 		@Override
 		public void onSessionClosed(NioSession session) {
-			Log.d("ShareService", Thread.currentThread().getId() + " Client " + myInfo.getIp() + " session closed.");
+			Log.d(GlobalUtil.LOG_TAG, Thread.currentThread().getId() + " Client " + myInfo.getIp() + " session closed.");
 			clientStatus = ClientStatus.UNCONNECTED;
 			osHandler.post(new Runnable() {
 				@Override
@@ -100,7 +101,7 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 			final ClientInfo client;
 			final ResourceInfo resource;
 			ShareCircleServerMessageType msgType = ShareCircleServerMessageType.parseFromInt(message.messageType);
-			Log.d("ShareService", Thread.currentThread().getId() + " " + LogUtil.logServerMessageReceived(message));
+			Log.d(GlobalUtil.LOG_TAG, Thread.currentThread().getId() + " " + LogUtil.logServerMessageReceived(message));
 			switch (msgType) {
 			case ACCEPT_REGISTER:
 				osHandler.post(new Runnable() {
@@ -368,7 +369,7 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 	
 	private void sendClientMessage(UserMessage message) {
 		if (this.messageClient.isConnected()) {
-			Log.d("ShareService", Thread.currentThread().getId() + " " + LogUtil.logClientMessageSend(message));
+			Log.d(GlobalUtil.LOG_TAG, Thread.currentThread().getId() + " " + LogUtil.logClientMessageSend(message));
 			this.messageClient.sendMessage(message);
 		}
 	}
