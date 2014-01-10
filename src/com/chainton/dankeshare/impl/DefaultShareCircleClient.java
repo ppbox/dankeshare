@@ -197,11 +197,6 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 	};
 	
 	@Override
-	public void setCallback(ShareCircleClientCallback callback) {
-		this.shareCircleClientCallback = callback;
-	}
-	
-	@Override
 	public void startHttpFileService() {
 		if (this.httpFileServer == null) {
 			this.httpFileServer = ShareServiceFileServer.getInstance();
@@ -220,7 +215,8 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 	}
 	
 	@Override
-	public void connectToServer(String sIP) {
+	public void connectToServer(String sIP, ShareCircleClientCallback callback) {
+		this.shareCircleClientCallback = callback;
 		this.messageClient.connectToServer(sIP);
 		this.disconnectByUser = false;
 	}

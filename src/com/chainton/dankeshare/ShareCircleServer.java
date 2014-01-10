@@ -14,7 +14,7 @@ public interface ShareCircleServer {
 	/**
 	 * 启动服务器开始监听
 	 */
-	void startServer(ServerMessageHandler handler);
+	void startServer(ShareCircleServerCallback callback, ServerMessageHandler handler);
 	
 	/**
 	 * 取得当前服务端信息
