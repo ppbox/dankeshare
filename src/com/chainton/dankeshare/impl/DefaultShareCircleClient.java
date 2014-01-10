@@ -8,11 +8,11 @@ import java.util.Set;
 import android.os.Handler;
 import android.util.Log;
 
-import com.chainton.dankeshare.HttpDownloadFile;
-import com.chainton.dankeshare.ShareCircleClientCallback;
-import com.chainton.dankeshare.ReceiveShareListener;
 import com.chainton.dankeshare.ClientMessageHandler;
+import com.chainton.dankeshare.HttpDownloadFile;
+import com.chainton.dankeshare.ReceiveShareListener;
 import com.chainton.dankeshare.ShareCircleClient;
+import com.chainton.dankeshare.ShareCircleClientCallback;
 import com.chainton.dankeshare.ShareCircleInfo;
 import com.chainton.dankeshare.data.ClientInfo;
 import com.chainton.dankeshare.data.ResourceInfo;
@@ -125,6 +125,10 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 						shareCircleClientCallback.onJoinRequestAccepted();
 					}
 				});
+				
+				
+
+				
 				break;
 			case REJECT_JOIN:
 				osHandler.post(new Runnable() {
@@ -140,6 +144,12 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 						clientMessageHandler.onClientJoined(client);
 					}
 				});
+				
+/*				UserMessage joinMessage = new UserMessage();
+				joinMessage.messageType = ShareCircleClientMessageType.GET_ALL_SHARED_RESOURCES.intValue();
+				joinMessage.messageData = myInfo;
+				sendClientMessage(joinMessage);
+				*/
 				break;
 			case CLIENT_EXITED:
 				client = (ClientInfo)message.messageData;

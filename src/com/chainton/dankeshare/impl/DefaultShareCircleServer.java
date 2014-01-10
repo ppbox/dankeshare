@@ -10,6 +10,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import android.util.Log;
+
 import com.chainton.dankeshare.ShareCircleInfo;
 import com.chainton.dankeshare.ShareCircleServer;
 import com.chainton.dankeshare.ServerMessageHandler;
@@ -241,6 +243,10 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 		}
 		acceptedClients.add(client);
 		shareCircleInfo.setAcceptedClients(acceptedClients.size());
+		
+		Log.d("DefaultShareCircleServer", "accept a client into server client: "+client.getName());
+		//inform the exist resource;
+		informAllSharedResources(client);
 	}
 	
 	@Override
@@ -266,13 +272,17 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 	
 	@Override
 	public void informAllSharedResources(final ClientInfo client) {
-		UserMessage msg = new UserMessage();
+		UserMessage msg = null;
 		NioSession session = clientSessionMap.get(client);
 		if (session != null) {
-			msg.messageType = ShareCircleServerMessageType.RESOURCE_ADDED.intValue();
+			Log.d("DefaultShareCircleServer", "add all resource to new client");
+			
 			for (ResourceInfo rInfo : allSharedResources) {
+				msg = new UserMessage();
+				msg.messageType = ShareCircleServerMessageType.RESOURCE_ADDED.intValue();
 				msg.messageData = rInfo;
 				sendServerMessage(session, msg);
+				Log.d("DefaultShareCircleServer", "rInfo:"+rInfo.getThumbUrl());
 			}
 		}
 	}
