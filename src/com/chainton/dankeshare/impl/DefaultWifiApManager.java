@@ -198,30 +198,46 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 	 * @param callback
 	 * @return 是否有效连接
 	 */
-	private boolean validIp(WifiInfo wi, ConnectCallback callback){
+	private boolean validIp(WifiInfo wi, InternalIpInfo ipInfo){
 		long ipint = wi.getIpAddress();
 		if(ipint != 0){
-			String ip = NetworkUtil.long2ip(ipint);
-			String gatewayIp = NetworkUtil.long2ip((ipint | 0x01000000) & 0x01FFFFFF);
-			if (ip != null && ip.length() > 0) {
-				callback.onConnectSuccess(wi.getSSID(), gatewayIp, ip);
+			ipInfo.ip = NetworkUtil.long2ip(ipint);
+			ipInfo.gatewayIp = NetworkUtil.long2ip((ipint | 0x01000000) & 0x01FFFFFF);
+			if (ipInfo.ip != null && ipInfo.ip.length() > 0) {
 				return true;
 			}
 		}
-		callback.onConnectFailed("Cannot get valid IP from " + wi.getSSID() + " on " + wi.getMacAddress());
+		Log.d(GlobalUtil.LOG_TAG, "Cannot get valid IP from " + wi.getSSID() + " on " + wi.getMacAddress());
 		return false;
+	}
+	
+	/**
+	 * IP信息类
+	 * @author Rivers
+	 *
+	 */
+	private class InternalIpInfo {
+		/**
+		 * 网关IP
+		 */
+		public String gatewayIp;
+		/**
+		 * IP地址
+		 */
+		public String ip;
 	}
 	
 	@Override
 	public void connectWifi(final ScanResult scanResult, String shareKey, final ConnectCallback callback) {
 		final WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-		Log.d("ShareService", "Start connect to " + scanResult.SSID + " shareKey: " + shareKey);
+		Log.d(GlobalUtil.LOG_TAG, "Start connect to " + scanResult.SSID + " shareKey: " + shareKey);
 		wifiManager.setWifiEnabled(true);
 		WifiInfo wi = wifiManager.getConnectionInfo();
+		InternalIpInfo ipInfo = new InternalIpInfo();
 		if (wi != null && wi.getSSID() != null) {
 			if (isEqualsSSID(scanResult.SSID, wi.getSSID())) {
-				if (validIp(wi, callback)) {
-					// 已经正确连接到制定的热点上，不需额外处理
+				if (validIp(wi, ipInfo)) {
+					callback.onConnectSuccess(wi.getSSID(), ipInfo.gatewayIp, ipInfo.ip);
 					return;
 				}
 			} else {
@@ -240,14 +256,14 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 				}
 			}
 		}
-		Log.d("ShareService", "Connect to " + scanResult.SSID + ", step2");
+		Log.d(GlobalUtil.LOG_TAG, "Connect to " + scanResult.SSID + ", step2");
 		if (targetWc != null && shareKey == null) {
 			wifiManager.enableNetwork(targetWc.networkId, true);
 		} else {
 			if(targetWc != null){
 				wifiManager.removeNetwork(targetWc.networkId);
 			}
-			Log.d("ShareService", "Connect to " + scanResult.SSID + ", step3");
+			Log.d(GlobalUtil.LOG_TAG, "Connect to " + scanResult.SSID + ", step3");
 			WifiConfiguration wcg = new WifiConfiguration();
 			wcg.SSID = ssidyh;
 			if (shareKey != null && scanResult.capabilities.contains("PSK")) {
@@ -266,10 +282,10 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 			
 			wcg.networkId = wifiManager.addNetwork(wcg);
 			if (wcg.networkId != -1) {
-				Log.d("ShareService", "Enabling connection to " + scanResult.SSID);
+				Log.d(GlobalUtil.LOG_TAG, "Enabling connection to " + scanResult.SSID);
 				wifiManager.enableNetwork(wcg.networkId, true);
 			} else {
-				callback.onConnectFailed("Cannot add to network " + wcg.SSID);
+				callback.onConnectFailed("Cannot connect to network " + wcg.SSID);
 				return;
 			}
 		}
@@ -280,12 +296,14 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 			@Override
 			public void run() {
 				int timeoutCount = 0;
+				InternalIpInfo ipInfo = new InternalIpInfo();
 				while (timeoutCount < VALIDATE_WIFI_CONNECTION_TIMEOUT) {
 					if (wifiManager.getWifiState() == WifiManager.WIFI_STATE_ENABLED) {
 						WifiInfo wi = wifiManager.getConnectionInfo();
 						if (wi != null && wi.getSSID() != null) {
 							if (isEqualsSSID(scanResult.SSID, wi.getSSID())) {
-								if (validIp(wi, callback)) {
+								if (validIp(wi, ipInfo)) {
+									callback.onConnectSuccess(wi.getSSID(), ipInfo.gatewayIp, ipInfo.ip);
 									return;
 								}
 							}
@@ -298,6 +316,7 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 					}
 					timeoutCount++;
 				}
+				callback.onConnectFailed("Cannot connect to network " + scanResult.SSID);
 			}
 		});
 	}

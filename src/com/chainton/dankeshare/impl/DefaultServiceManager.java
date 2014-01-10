@@ -159,7 +159,7 @@ public final class DefaultServiceManager implements ServiceManager {
 		if (shareCircleType.equals(ShareCircleType.WIFIAP)) {
 			final WifiApShareCircleInfo waci = apNameCodec.encodeWifiApName(shareCircleName, appInfo);
 			WifiConfiguration config = wifiApManager.createWifiApConfig(waci.getSSID(), waci.getShareKey());
-			Log.d("ShareService", "Create SSID " + waci.getSSID() + " with sharedKey " + waci.getShareKey());
+			Log.d(GlobalUtil.LOG_TAG, "Create SSID " + waci.getSSID() + " with sharedKey " + waci.getShareKey());
 			wifiApManager.openWifiAp(config, new WifiApManager.WifiApOpenListener() {
 				@Override
 				public void onStartSucceed() {
@@ -255,16 +255,16 @@ public final class DefaultServiceManager implements ServiceManager {
 		searchReceiver = new BroadcastReceiver() {
 			@Override
 			public void onReceive(Context context, Intent intent) {
-				Log.d("ShareService", "On received broadcast...");
+				Log.d(GlobalUtil.LOG_TAG, "On received broadcast...");
 				WifiManager wifiManager = (WifiManager) context
 						.getSystemService(Context.WIFI_SERVICE);
 				List<ScanResult> wifiAps = wifiManager.getScanResults();
 				for (ScanResult sr : wifiAps) {
 					if (!queriedScanResults.containsKey(sr.SSID)) {
-						Log.d("ShareService", "Found useable SSID: " + sr.SSID);
+						Log.d(GlobalUtil.LOG_TAG, "Found useable SSID: " + sr.SSID);
 						final WifiApShareCircleInfo waci = apNameCodec.decodeWifiApName(sr.SSID, appInfo);
 						if (waci != null) {
-							Log.d("ShareService", "Found usable wifiAP: " + waci.getName());
+							Log.d(GlobalUtil.LOG_TAG, "Found usable wifiAP: " + waci.getName());
 							queriedScanResults.put(sr.SSID, sr);
 							validShareCircles.put(sr.SSID, waci);
 							callback.onFoundShareCircle(waci);
@@ -274,7 +274,7 @@ public final class DefaultServiceManager implements ServiceManager {
 			}
 		};
 		context.registerReceiver(searchReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
-		Log.d("ShareService", "Start searching ShareCircle...");
+		Log.d(GlobalUtil.LOG_TAG, "Start searching ShareCircle...");
 		wifiConnectManager.searchWifiAp();
 		int timeoutCount = 0;
 		while (validShareCircles.isEmpty() && timeoutCount < SEARCH_SHARE_CIRCLE_TIMEOUT) {
@@ -332,7 +332,7 @@ public final class DefaultServiceManager implements ServiceManager {
 			wifiConnectManager.connectWifi(scanResult, waci.getShareKey(), new WifiConnectManager.ConnectCallback() {
 				@Override
 				public void onConnectSuccess(String ssid, String gatewayIp, String localIp) {
-					Log.d("ShareService", "On connect success...");
+					Log.d(GlobalUtil.LOG_TAG, "On connect success...");
 					circleInfo.setServerIP(gatewayIp);
 					selfInfo.setIp(localIp);
 					final ShareCircleClient client = new DefaultShareCircleClient(selfInfo, handler);
@@ -342,10 +342,9 @@ public final class DefaultServiceManager implements ServiceManager {
 						}
 					});
 				}
-
 				@Override
 				public void onConnectFailed(String errorMessage) {
-					Log.d("ShareService", errorMessage);
+					Log.d(GlobalUtil.LOG_TAG, errorMessage);
 					handler.post(new Runnable() {
 						public void run() {
 							callback.onFailure();
