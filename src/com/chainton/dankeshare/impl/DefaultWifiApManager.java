@@ -582,7 +582,7 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 			wifiManager.setWifiEnabled(false);
 		}
 		try {  
-			configHtcWithKey(config);
+			configHtcWithKey(config); //TODO why do we do this, shall we need to check phone vender before invoke it
             Method method = wifiManager.getClass().getMethod("setWifiApEnabled", WifiConfiguration.class, Boolean.TYPE);  
             return (Boolean) method.invoke(wifiManager, config, isEnabled);  
         } catch (Exception e) {
