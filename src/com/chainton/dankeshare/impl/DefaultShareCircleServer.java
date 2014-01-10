@@ -12,6 +12,7 @@ import java.util.concurrent.Executors;
 
 import android.util.Log;
 
+import com.chainton.dankeshare.CreateShareCircleServerCallback;
 import com.chainton.dankeshare.ShareCircleInfo;
 import com.chainton.dankeshare.ShareCircleServer;
 import com.chainton.dankeshare.ServerMessageHandler;
@@ -61,6 +62,8 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 	private volatile ClientInfo myInfo;
 	
 	private volatile boolean isDestroyingServer = false;
+	
+	private CreateShareCircleServerCallback callback;
 
 	public DefaultShareCircleServer(ShareCircleInfo shareCircleInfo, ClientInfo myInfo, int maxClients) {
 		this.myInfo = myInfo;
@@ -86,6 +89,8 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 
 		@Override
 		public void onServerStartFailed() {
+			if(callback != null)
+				callback.onFailure();
 		}
 
 		@Override
@@ -180,6 +185,7 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 				informAllSharedResources(client);
 				break;
 			case GET_ALL_CLIENTS:
+				Log.d("OhMyGod", "server收到请求查找所有客户端");
 				informAllAcceptedClients(client);
 				break;
 			case ADD_SHARE_RESOURCE:
@@ -213,7 +219,8 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 	};
 	
 	@Override
-	public void startServer(ServerMessageHandler handler) {
+	public void startServer(ServerMessageHandler handler, CreateShareCircleServerCallback callback) {
+		this.callback = callback;
 		this.serverMessageHandler = handler;
 		this.messageServer.startServer(9999, 10);
 	}
@@ -259,11 +266,11 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 
 	@Override
 	public void informAllAcceptedClients(final ClientInfo client) {
-		UserMessage msg = new UserMessage();
 		NioSession session = clientSessionMap.get(client);
 		if (session != null) {
-			msg.messageType = ShareCircleServerMessageType.CLIENT_JOINED.intValue();
 			for (ClientInfo cInfo : acceptedClients) {
+				UserMessage msg = new UserMessage();
+				msg.messageType = ShareCircleServerMessageType.CLIENT_JOINED.intValue();
 				msg.messageData = cInfo;
 				sendServerMessage(session, msg);
 			}
