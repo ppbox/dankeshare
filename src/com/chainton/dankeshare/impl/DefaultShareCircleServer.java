@@ -12,10 +12,10 @@ import java.util.concurrent.Executors;
 
 import android.util.Log;
 
-import com.chainton.dankeshare.CreateShareCircleServerCallback;
 import com.chainton.dankeshare.ShareCircleInfo;
 import com.chainton.dankeshare.ShareCircleServer;
 import com.chainton.dankeshare.ServerMessageHandler;
+import com.chainton.dankeshare.ShareCircleServerCallback;
 import com.chainton.dankeshare.data.ClientInfo;
 import com.chainton.dankeshare.data.ResourceInfo;
 import com.chainton.dankeshare.data.enums.ShareCircleClientMessageType;
@@ -55,6 +55,7 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 	
 	private volatile ShareCircleInfo shareCircleInfo;
 	private volatile ServerMessageHandler serverMessageHandler;
+	private volatile ShareCircleServerCallback serverCallback;
 		
 	/**
 	 * 本地客户端信息
@@ -62,8 +63,6 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 	private volatile ClientInfo myInfo;
 	
 	private volatile boolean isDestroyingServer = false;
-	
-	private CreateShareCircleServerCallback callback;
 
 	public DefaultShareCircleServer(ShareCircleInfo shareCircleInfo, ClientInfo myInfo, int maxClients) {
 		this.myInfo = myInfo;
@@ -85,12 +84,12 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 
 		@Override
 		public void onServerStarted() {
+			serverCallback.onServerStarted();
 		}
 
 		@Override
 		public void onServerStartFailed() {
-			if(callback != null)
-				callback.onFailure();
+			serverCallback.onServerStartFailed();
 		}
 
 		@Override
@@ -219,8 +218,8 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 	};
 	
 	@Override
-	public void startServer(ServerMessageHandler handler, CreateShareCircleServerCallback callback) {
-		this.callback = callback;
+	public void startServer(ShareCircleServerCallback callback, ServerMessageHandler handler) {
+		this.serverCallback = callback;
 		this.serverMessageHandler = handler;
 		this.messageServer.startServer(9999, 10);
 	}

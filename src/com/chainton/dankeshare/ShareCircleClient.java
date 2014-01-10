@@ -14,11 +14,6 @@ import com.chainton.dankeshare.data.enums.ClientStatus;
 public interface ShareCircleClient {
 
 	/**
-	 * 设置客户端回调
-	 */
-	void setCallback(ShareCircleClientCallback callback);
-	
-	/**
 	 * 启动文件共享服务
 	 */
 	void startHttpFileService();
@@ -27,7 +22,7 @@ public interface ShareCircleClient {
 	 * 发起与服务器的连接
 	 * @param serverIP 逻辑服务器IP
 	 */
-	void connectToServer(String serverIP);
+	void connectToServer(String serverIP, ShareCircleClientCallback callback);
 	
 	/**
 	 * 重新连接到当前服务器
