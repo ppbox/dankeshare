@@ -1,7 +1,20 @@
-/.DS_Store
+# OS and IDE Files #
+*.DS_Store
 /.settings
 /.classpath
 /.project
+
+# Package and Build Files #
 *.jar
+*.war
+*.ear
+*.class
+*.log
+/javadoc.xml
+/target
 /bin
+/classes
 /dist
+/logs
+
+
