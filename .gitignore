@@ -1,3 +1,7 @@
+/.DS_Store
+/.settings
+/.classpath
+/.project
+*.jar
 /bin
 /dist
-/.DS_Store

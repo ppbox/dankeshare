@@ -14,9 +14,15 @@ import com.chainton.dankeshare.data.enums.ClientStatus;
 public interface ShareCircleClient {
 
 	/**
+	 * TODO: to be removed until replacement is over
 	 * 启动文件共享服务
 	 */
 	void startHttpFileService();
+	
+	/**
+	 *  启动文件接受器
+	 */
+	void startFileReceiver();
 	
 	/**
 	 * 发起与服务器的连接

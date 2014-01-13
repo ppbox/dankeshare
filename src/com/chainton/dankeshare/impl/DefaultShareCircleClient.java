@@ -1,6 +1,7 @@
 package com.chainton.dankeshare.impl;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -51,10 +52,12 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 	private volatile ClientMessageHandler clientMessageHandler;
 	private volatile Handler osHandler;
 	private ShareServiceFileServer httpFileServer = null;
+	private ShareCircleFileReceiver fileReceiver;
 	private boolean disconnectByUser;
 	
 	public DefaultShareCircleClient(ClientInfo myInfo, Handler handler) {
 		this.messageClient = new ForestMessageClient(this.clientEventsHandler);
+		this.fileReceiver = new ShareCircleFileReceiver(); //Can use port parameter when new it
 		this.myInfo = myInfo;
 		this.myShare = new HashSet<String>();
 		this.osHandler = handler;
@@ -224,6 +227,18 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 		}
 	}
 	
+	
+	@Override
+	public void startFileReceiver() {
+		try {
+			this.fileReceiver.start();
+		} catch (Exception e) {
+			e.printStackTrace();
+			// TODO: handle exception and emit an event saying that file receiver start failed
+		}
+	}
+
+
 	@Override
 	public void connectToServer(String sIP, ShareCircleClientCallback callback) {
 		this.shareCircleClientCallback = callback;
@@ -339,8 +354,10 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 
 	private void exitShareCircle() {
 		if (httpFileServer != null) {
-			httpFileServer.stop();
-			httpFileServer = null;
+			httpFileServer.stop(); //TODO: to be removed after the whole replacement
+			httpFileServer = null; //TODO: to be removed after the whole replacement
+			fileReceiver.stop();
+			fileReceiver = null;
 		}
 		UserMessage msg = new UserMessage();
 		msg.messageType = ShareCircleClientMessageType.EXIT_SHARE_CIRCLE.intValue();
