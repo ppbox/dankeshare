@@ -31,6 +31,8 @@ public class ShareCircleAppInfo implements Serializable {
 	 * 额外信息
 	 */
 	public String extraInfo;
+	
+	public int faceId;
 
 	@Override
 	public boolean equals(Object obj) {

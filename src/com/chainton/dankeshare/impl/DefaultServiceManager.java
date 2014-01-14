@@ -157,6 +157,8 @@ public final class DefaultServiceManager implements ServiceManager {
 			throw new WrongServiceModeException("Cannot create ShareCircle in client mode.");
 		}
 		if (shareCircleType.equals(ShareCircleType.WIFIAP)) {
+			//String circleName = shareCircleName+";"+selfInfo.getHeadIconIndex();
+			//Log.d("DefaultServiceManager", "circleName: "+circleName);
 			final WifiApShareCircleInfo waci = apNameCodec.encodeWifiApName(shareCircleName, appInfo);
 			WifiConfiguration config = wifiApManager.createWifiApConfig(waci.getSSID(), waci.getShareKey());
 			Log.d(GlobalUtil.LOG_TAG, "Create SSID " + waci.getSSID() + " with sharedKey " + waci.getShareKey());
