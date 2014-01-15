@@ -202,6 +202,7 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 					}
 				});
 				break;
+
 			default:
 				break;
 			}

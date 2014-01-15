@@ -56,4 +56,23 @@ public class ResourceInfo implements Serializable {
 		this.url = url;
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		if(this == obj){
+			return true;
+		}
+		
+		if(obj == null){
+			return false;
+		}
+		
+		if(obj instanceof ResourceInfo){
+			ResourceInfo other = (ResourceInfo)obj;
+			if(this.md5.equals(other.md5)){
+				return true;
+			}
+		} 
+		
+		return false;
+	}
 }
