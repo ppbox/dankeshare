@@ -180,12 +180,13 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 				});
 				break;
 			case SERVER_EXITED:
-				messageClient.startClosing(false);
+				
 				osHandler.post(new Runnable() {
 					public void run() {
 						clientMessageHandler.onServerExited();
 					}
 				});
+				messageClient.startClosing(false);
 				break;
 			case KICK_OFF:
 				osHandler.post(new Runnable() {
@@ -357,8 +358,8 @@ public final class DefaultShareCircleClient implements ShareCircleClient {
 		if (httpFileServer != null) {
 			httpFileServer.stop(); //TODO: to be removed after the whole replacement
 			httpFileServer = null; //TODO: to be removed after the whole replacement
-			fileReceiver.stop();
-			fileReceiver = null;
+			//fileReceiver.stop();
+			//fileReceiver = null;
 		}
 		UserMessage msg = new UserMessage();
 		msg.messageType = ShareCircleClientMessageType.EXIT_SHARE_CIRCLE.intValue();

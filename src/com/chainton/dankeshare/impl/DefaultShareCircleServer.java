@@ -419,6 +419,28 @@ public final class DefaultShareCircleServer implements ShareCircleServer {
 		this.messageServer.startClosing();
 	}
 	
+	
+	
+	@Override
+	public void informClientServerExit() {
+		
+		NioSession session;
+		for (ClientInfo cInfo : acceptedClients) {
+			UserMessage msg = new UserMessage();
+			session = clientSessionMap.get(cInfo);
+			if (session != null) {
+				msg.messageType = ShareCircleServerMessageType.SERVER_EXITED.intValue();
+				sendServerMessage(session, msg);
+			}
+		}
+		
+	}
+	
+	@Override
+	public void serverExit() {
+		this.messageServer.startClosing();
+	}
+	
 	private void clearData() {
 		this.clientSessionMap.clear();
 		this.clientBundles.clear();

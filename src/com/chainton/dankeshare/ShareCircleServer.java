@@ -88,4 +88,15 @@ public interface ShareCircleServer {
 	 */
 	void sendDataToClient(ClientInfo client, byte[] bytes);
 	
+	/**
+	 * send message to all client
+	 * server will exit
+	 */
+	void informClientServerExit();
+
+	/**
+	 * do server exit;
+	 */
+	void serverExit();
+	
 }
