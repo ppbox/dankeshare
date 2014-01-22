@@ -4,7 +4,8 @@
 <property name="src" value="."/>
 <property name="build" value="bin"/>
 <property name="dist" value="dist"/>
-<property name="forest" value="../forest"/> 
+<property name="forest" value="../forest"/>
+<property name="nfc-game" value="../nfc-game"/>
 
 <path id="project.class.path">  
 <pathelement location="libs/android.jar"/>
@@ -21,9 +22,13 @@
 <javac srcdir="${forest}/${src}" destdir="${build}">
 	<compilerarg line=" -encoding UTF-8"/>
 </javac>
+<javac srcdir="${nfc-game}/${src}" destdir="${build}">
+	<compilerarg line=" -encoding UTF-8"/>
+	<classpath refid="project.class.path"/>
+</javac>
 <javac srcdir="${src}" destdir="${build}">
 	<compilerarg line=" -encoding UTF-8"/>
-	<classpath refid="project.class.path"/>    
+	<classpath refid="project.class.path"/>
 </javac>
 </target>
 

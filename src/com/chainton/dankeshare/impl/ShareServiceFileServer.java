@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.chainton.dankeshare.util.DigestUtils;
+import com.chainton.dankeshare.util.DigestUtil;
 
 /**
  * http文件服务器
@@ -67,7 +67,7 @@ public class ShareServiceFileServer extends NanoHTTPD {
 	 * @return 映射的url
 	 */
 	public String addImage(String localIp, File file){
-		String md5 = DigestUtils.md5Hex(file);
+		String md5 = DigestUtil.md5Hex(file);
 		String uri = "/" + md5;
 		String url = "http://" + localIp + ":" + HTTP_PORT + uri;
 		imageServiceMap.put(uri, file);
