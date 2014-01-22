@@ -25,7 +25,7 @@ import com.chainton.dankeshare.util.GlobalUtil;
 import com.chainton.dankeshare.util.NetworkUtil;
 
 /**
- * 默认WIFI热点管理及WIFI连接管理实现类
+ * 默认WIFI热点管理及WIFI连接管理实现�?
  * @author 富林
  *
  */
@@ -43,26 +43,26 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 	private static final int WIFI_AP_STATE_FAILED_VER4 = 14;
 	
 	/**
-	 * 打开WIFI热点超时时间（秒）
+	 * 打开WIFI热点超时时间（秒�?
 	 */
 	private static final int OPEN_WIFI_AP_TIMEOUT = 15;
 	/**
-	 * 关闭WIFI热点超时时间（秒）
+	 * 关闭WIFI热点超时时间（秒�?
 	 */
 	private static final int CLOSE_WIFI_AP_TIMEOUT = 4;
 	/**
-	 * 检查WIFI连接超时时间（秒）
+	 * �?��WIFI连接超时时间（秒�?
 	 */
 	private static final int VALIDATE_WIFI_CONNECTION_TIMEOUT = 10;
 	
 	/**
-	 * android上下文
+	 * android上下�?
 	 */
 	private Context context;
 	private WifiManager wifiManager;
 	
 	/**
-	 * 当前热点状态
+	 * 当前热点状�?
 	 */
 	private WifiApStatus currentStatus;
 	
@@ -72,7 +72,7 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 	private OldNetInfo oldNetInfo;
 	
 	/**
-	 * 热点状态枚举
+	 * 热点状�?枚举
 	 * @author 富林
 	 *
 	 */
@@ -81,12 +81,12 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 	}
 	
 	/**
-	 * android内置热点状态整数值与热点状态的映射关系
+	 * android内置热点状�?整数值与热点状�?的映射关�?
 	 */
 	public static final SparseArray<WifiApStatus> statusArray;
 	
 	/**
-	 * 初始化映射关系
+	 * 初始化映射关�?
 	 */
 	static{
 		statusArray = new SparseArray<WifiApStatus>();
@@ -212,7 +212,7 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 	}
 	
 	/**
-	 * IP信息类
+	 * IP信息�?
 	 * @author Rivers
 	 *
 	 */
@@ -290,7 +290,7 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 			}
 		}
 		/**
-		 * 异步线程, 等待连接的状态变化, 超时判断以及校验连接的有效性,并调用响应的回调方法
+		 * 异步线程, 等待连接的状态变�? 超时判断以及校验连接的有效�?,并调用响应的回调方法
 		 */
 		GlobalUtil.threadExecutor().execute(new Runnable() {
 			@Override
@@ -322,8 +322,8 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 	}
 
 	/**
-	 * 当前热点是否已打开
-	 * @return true:热点开放状态, false: 热点关闭状态
+	 * 当前热点是否已打�?
+	 * @return true:热点�?��状�?, false: 热点关闭状�?
 	 */
 	private boolean isWifiApEnabled(){
 		return (getCurrentStatus() == WifiApStatus.ENABLED);
@@ -376,7 +376,7 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 		int wifiId;
 		
 		/**
-		 * 如果热点是打开状态, 当前的热点配置信息
+		 * 如果热点是打�?���? 当前的热点配置信�?
 		 */
 		WifiConfiguration apConfig;
 		
@@ -430,17 +430,19 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 			oldNetInfo = new OldNetInfo();
 		}
 		oldNetInfo.saveState();
+		Log.i(this.getClass().getName(), " saveWifiState  oldNetInfo ssid:"+oldNetInfo.apConfig.SSID);
 	}
 
 	@Override
 	public void restoreWifiState(RestoreWifiStateResult result) {
 		if(oldNetInfo != null){
 			oldNetInfo.restore(result);
+			Log.i(this.getClass().getName(), " not null ssid:"+oldNetInfo.apConfig.SSID);
 		}
 	}
 	
 	/**
-	 * 创建一个WIFI连接配置
+	 * 创建�?��WIFI连接配置
 	 * @param ssid
 	 * @param shareKey
 	 * @return
@@ -494,7 +496,7 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 	}
 
 	/**
-	 * 配置htc热点,无密码
+	 * 配置htc热点,无密�?
 	 * @param config
 	 */
 	private void configHtcWithOutSharekey(WifiConfiguration config) {
@@ -535,7 +537,7 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 	}
 	
 	/**
-	 * 设置普通热点配置
+	 * 设置普�?热点配置
 	 * @param config
 	 */
 	private void setNormalConfig(WifiConfiguration config){
@@ -549,8 +551,8 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 	}
 	
 	/**
-	 * 获取当前热点状态枚举实例
-	 * @return 热点状态枚举实例
+	 * 获取当前热点状�?枚举实例
+	 * @return 热点状�?枚举实例
 	 */
 	private WifiApStatus getCurrentStatus(){
 		int state = getWifiApState();
@@ -559,8 +561,8 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 	}
 	
 	/**
-	 * 从android系统获取的热点状态整数值
-	 * @return 热点状态整数值
+	 * 从android系统获取的热点状态整数�?
+	 * @return 热点状�?整数�?
 	 */
 	private int getWifiApState(){
 		try {
@@ -572,7 +574,7 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 	}
 	
 	/**
-	 * 设置wifi热点的状态
+	 * 设置wifi热点的状�?
 	 * @param config
 	 * @param isEnabled
 	 * @return 是否成功
@@ -640,8 +642,8 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
     }
 	
 	/**
-	 * 获取当前2g/3g数据连接是否已打开
-	 * @return 2g/3g数据连接是否已打开
+	 * 获取当前2g/3g数据连接是否已打�?
+	 * @return 2g/3g数据连接是否已打�?
 	 */
 	private boolean getMobileDataStatus() {
         ConnectivityManager cm;
@@ -661,7 +663,7 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
     }
 	
 	/**
-	 * 设置2g/3g数据连接状态
+	 * 设置2g/3g数据连接状�?
 	 * @param enabled
 	 * @return 是否设置成功
 	 */
@@ -691,8 +693,8 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
     }
 	
 	/**
-	 * 当前是否已连接热点
-	 * @return 是否已连接热点
+	 * 当前是否已连接热�?
+	 * @return 是否已连接热�?
 	 */
 	private boolean isWifiConnected() {
 		if (wifiManager.getWifiState() == WifiManager.WIFI_STATE_ENABLED) {
@@ -717,7 +719,7 @@ public final class DefaultWifiApManager implements WifiApManager, WifiConnectMan
 	}
 	
 	/**
-	 * 连接指定id的热点
+	 * 连接指定id的热�?
 	 * @param netId
 	 */
 	private void connectToAp(int netId) {
