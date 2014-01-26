@@ -33,7 +33,7 @@
 </target>
 
 <target name="dist" depends="compile">
-<jar jarfile="${dist}/ShareServiceSocket.jar" basedir="${build}"/>
+<jar jarfile="${dist}/dankeshare.jar" basedir="${build}"/>
 </target>
 
 <target name="clean">
