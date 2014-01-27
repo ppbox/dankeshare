@@ -2,10 +2,10 @@ package com.chainton.dankeshare.data;
 
 import java.io.Serializable;
 
+import com.chainton.forest.core.CoreFileInfo;
+
 /**
  * 分享资源信息类
- * @author 富林
- *
  */
 public class ResourceInfo implements Serializable {
 
@@ -16,6 +16,9 @@ public class ResourceInfo implements Serializable {
 	private String length;
 	private String thumbUrl;
 	private String md5;
+	public CoreFileInfo fileInfo;
+	public String receiverIp;
+	
 	public String getMd5() {
 		return md5;
 	}
@@ -58,21 +61,20 @@ public class ResourceInfo implements Serializable {
 
 	@Override
 	public boolean equals(Object obj) {
-		if(this == obj){
+		if (this == obj) {
 			return true;
-		}
-		
-		if(obj == null){
-			return false;
-		}
-		
-		if(obj instanceof ResourceInfo){
+		} else if (obj != null && obj instanceof ResourceInfo) {
 			ResourceInfo other = (ResourceInfo)obj;
-			if(this.md5.equals(other.md5)){
+			if(this.md5.equals(other.getMd5())){
 				return true;
 			}
-		} 
-		
+		}
 		return false;
 	}
+	
+	@Override
+	public int hashCode() {
+		return this.md5.hashCode();
+	}
+	
 }
