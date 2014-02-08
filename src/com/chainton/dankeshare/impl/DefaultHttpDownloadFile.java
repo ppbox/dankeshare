@@ -143,7 +143,7 @@ public final class DefaultHttpDownloadFile implements HttpDownloadFile {
 				fos.write(String.valueOf(total + startLocation).getBytes());
 				fos.close();
 				listener.onUpdateProgress((float) (total + startLocation)
-						/ length);
+						/ length, 0);
 			}
 			hasDownloadFile.delete(); // 下载完成后删除这个记录
 			urlAndLengthFile.delete();
