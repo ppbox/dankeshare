@@ -22,5 +22,5 @@ public interface ReceiveShareListener {
 	 * 更新下载进度, rate(0-1)
 	 * @param rate
 	 */
-	void onUpdateProgress(float rate);
+	void onUpdateProgress(float rate,long speed);
 }
