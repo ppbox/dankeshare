@@ -17,6 +17,7 @@ public class ResourceInfo implements Serializable {
 	private String thumbUrl;
 	private String md5;
 	public CoreFileInfo fileInfo;
+	public CoreFileInfo thumbnail;
 	public String receiverIp;
 	
 	public String getMd5() {
