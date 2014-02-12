@@ -3,7 +3,7 @@
 <!-- set global properties for this build -->
 <property name="src" value="."/>
 <property name="build" value="bin"/>
-<property name="dist" value="dist"/>
+<property name="dist" value="../dankeshare-app/libs"/>
 <property name="forest" value="../forest"/>
 <property name="nfc-game" value="../dankeshare-base"/>
 
