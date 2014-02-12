@@ -16,7 +16,7 @@ import com.chainton.dankeshare.util.DigestUtil;
  *
  */
 public class ShareServiceFileServer extends NanoHTTPD {
-	private static final int HTTP_PORT = 9998;
+	private static final int HTTP_PORT = 10000;
 	private static final ShareServiceFileServer fileServer = new ShareServiceFileServer(HTTP_PORT);
 	private final AtomicBoolean isRun = new AtomicBoolean(false);
 	private final Map<String, File> fileServiceMap;
@@ -167,5 +167,20 @@ public class ShareServiceFileServer extends NanoHTTPD {
         Response res = new Response(status, mimeType, message);
         res.addHeader("Accept-Ranges", "bytes");
         return res;
+    }
+    
+    public static void main(String args[]){
+    	try{
+    		ShareServiceFileServer server = ShareServiceFileServer.getInstance();
+    		server.start();
+    		String localIp = "localhost";
+    		String md5 = "jkldsnf";
+    		File file = new File("D:\\data.docx");
+    		server.addFile(localIp, md5, file);
+    		
+    	}catch(Exception e){
+    		e.printStackTrace();
+    	}
+    
     }
 }
