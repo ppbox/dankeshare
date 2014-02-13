@@ -9,10 +9,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import android.os.Handler;
-
-import com.chainton.dankeshare.util.DigestUtil;
 
 /**
  * @author Administrator
@@ -20,8 +19,7 @@ import com.chainton.dankeshare.util.DigestUtil;
  */
 public class HttpFileServer extends NanoHTTPD {
 
-	private final Map<String, File> fileServiceMap;
-	private static final HttpFileServer server = new HttpFileServer();
+	private static  Map<String, File> fileServiceMap;
 	private static boolean running = true;
 	private static final int HTTP_PORT = 8080;
 
@@ -30,26 +28,21 @@ public class HttpFileServer extends NanoHTTPD {
 	 */
 	protected Handler handler;
 
-
+    /*public static HttpFileServer getInstance(){
+    	return server;
+    }
 	
 	private HttpFileServer() {
 		super(HTTP_PORT);
 		fileServiceMap = new HashMap<String, File>();
-	}
+	}*/
 	
-	private HttpFileServer(int port) {
+	public HttpFileServer(int port) {
 		super(port);
 		fileServiceMap = new HashMap<String, File>();
 	}
 	
-	/**
-	 * get singleton instance 
-	 * @return
-	 */
-	public static HttpFileServer getInstance() {
-		return server;
-	}
-	
+
 	
 	/**
 	 * 将一个文件映射到http服务上
@@ -68,10 +61,11 @@ public class HttpFileServer extends NanoHTTPD {
 		int i = fileName.lastIndexOf('.');
 		String extName = fileName.substring(i);
 		
-		String uri = "/" + md5+extName;
-		String url = "http://" + localIp + ":" + HTTP_PORT + uri;
-		System.out.println("url: "+url);
+		String key = md5+extName;
 		
+		String uri = "/" +key;
+		String url = "http://" + localIp + ":" + HTTP_PORT + uri;
+		System.out.println("put uri :  "+uri);
 		fileServiceMap.put(uri, file);
 		return url;
 	}
@@ -87,8 +81,10 @@ public class HttpFileServer extends NanoHTTPD {
 		//String type ="application/vnd.android.package-archive";
 		String type = "application/octet-stream";
 		String uri = session.getUri();
-		
+	
+		System.out.println("session uri:  "+uri);
 		if (fileServiceMap.containsKey(uri)) {
+			System.out.println("contains:  "+uri);
 			return serveFile(uri, session.getHeaders(),
 					fileServiceMap.get(uri), type);
 		} 
@@ -200,30 +196,22 @@ public class HttpFileServer extends NanoHTTPD {
 
 	/**
 	 * use a thread start the server;
+	 * @throws IOException 
 	 */
-	public void startServer() {
-
-		new Thread() {
-			public void run() {
-				try {
-					server.start();
-					System.out.println("Server started, Hit Enter to stop.\n");
-					while (running) {
-					}
-					System.out.println("Server stopped.\n");
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		}.start();
+	public void startServer() throws IOException {
+		super.start();
 	}
 	
 	/**
 	 * stop this http server
 	 */
 	public void stopServer() {
-		running = false;
-		server.stop();
+		System.out.println("stop http server!");
+		if(running){
+			running = false;
+			//server.stop();
+		}
+		System.out.println("stop success!");
 	}
 
     /**
@@ -233,13 +221,18 @@ public class HttpFileServer extends NanoHTTPD {
      */
 	public static void main(String[] args) throws InterruptedException {
 
-		final HttpFileServer httpFileServer = HttpFileServer.getInstance();
+		final HttpFileServer httpFileServer = new  HttpFileServer(8080);
 
 		String localIp = "localhost";
 		String md5 = "k";
 		File file = new File("D:\\1.apk");
 		httpFileServer.addFile(localIp, md5, file);
-		httpFileServer.startServer();
+		try {
+			httpFileServer.startServer();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 		Thread.sleep(2000);
 		//httpFileServer.stopServer();
