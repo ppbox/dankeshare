@@ -4,7 +4,6 @@
 package com.chainton.dankeshare.impl;
 
 import java.io.File;
-import java.io.IOException;
 
 import android.content.Context;
 import android.net.wifi.WifiConfiguration;
@@ -13,8 +12,6 @@ import android.util.Log;
 
 import com.chainton.dankeshare.CreateShareCircleResult;
 import com.chainton.dankeshare.OperationResult;
-import com.chainton.dankeshare.WifiApManager;
-import com.chainton.dankeshare.WifiApNameCodec;
 import com.chainton.dankeshare.data.ClientInfo;
 import com.chainton.dankeshare.data.ShareCircleAppInfo;
 import com.chainton.dankeshare.data.ShareCircleInfo;
@@ -22,16 +19,17 @@ import com.chainton.dankeshare.data.enums.ShareCircleType;
 import com.chainton.dankeshare.util.LogUtil;
 import com.chainton.dankeshare.util.NetworkUtil;
 import com.chainton.dankeshare.wifi.DefaultWifiApManager;
-import com.chainton.dankeshare.wifi.DefaultWifiApNameCodec;
-import com.chainton.dankeshare.wifi.WifiApShareCircleInfo;
 
 /**
- * @author Administrator
+ * @author Soar
  *
  */
 public class HotPotHttpFileService {
 	
-	private WifiApManager wifiApManager;
+	/**
+	 * 操作wifi 的 manager 接口类
+	 */
+	private DefaultWifiApManager wifiApManager;
 	/**
 	 * 分享圈名称
 	 */
@@ -51,6 +49,9 @@ public class HotPotHttpFileService {
 	 */
 	private CreateShareCircleResult createResult;
 
+	/**
+	 * android context
+	 */
 	private Context context;
 	
 	private static HotPotHttpFileService hotPotHttpFileService = new HotPotHttpFileService();
@@ -59,39 +60,30 @@ public class HotPotHttpFileService {
 	 * 主线程Handler实例
 	 */
 	protected Handler handler;
-	private HttpFileServer httpFileServer;  //= HttpFileServer.getInstance();
+	
+	private HttpFileServer httpFileServer; 
+	
+	/**
+	 * 默认启动http server 端口
+	 */
 	private static final int HTTP_PORT = 8080;
 
 	
 	private HotPotHttpFileService(){
 		
 	}
+	
 	public static HotPotHttpFileService getInstance(){
 		return hotPotHttpFileService;
 	}
 	
 	/**
-	 * start http server 
-	 * ap style
-	 * lan style
-	 *//*
-	public void startHttpshare() {
-		
-		DefaultWifiApManager manager = new DefaultWifiApManager(context);
-		this.wifiApManager = manager;
-		
-		if (shareCircleType.equals(ShareCircleType.WIFIAP)) {
-			this.createApShareCircle();
-		} else if (shareCircleType.equals(ShareCircleType.WIFILAN)) {
-			this.createLanShareCircle();
-		}
-	}*/
-	
-	
-	/**
-	 * start http server 
-	 * ap style
-	 * lan style
+	 * 启动 http 服务器
+	 * @param ssid    名称
+	 * @param shareType 启动类型
+	 * @param port  端口号
+	 * @param result 操作结果
+	 * @param context android context
 	 */
 	public void startHttpShare(String ssid,ShareCircleType shareType,int port,CreateShareCircleResult result,Context context) {
 		
@@ -101,10 +93,18 @@ public class HotPotHttpFileService {
 		httpFileServer = new HttpFileServer(port);
 		System.out.println("port:  "+port);
 		
-		
 		this.context = context.getApplicationContext();
 		this.wifiApManager = new DefaultWifiApManager(this.context);
 		this.handler = new Handler(this.context.getMainLooper());
+		
+		if (shareType == ShareCircleType.AUTO) {
+			if (this.wifiApManager. isWifiConnected()) {
+				shareType = ShareCircleType.WIFILAN;
+			} else {
+				shareType = ShareCircleType.WIFIAP;
+			}
+		}
+		
 		if (shareType.equals(ShareCircleType.WIFIAP)) {
 			this.createApShareCircle(ssid);
 		} else if (shareType.equals(ShareCircleType.WIFILAN)) {
@@ -114,10 +114,10 @@ public class HotPotHttpFileService {
 	}
 	
 	/**
-	 * add file to http server
-	 * @param localIp      phone ip (Ap ip or lan ip)
-	 * @param md5         the unique key for this file
-	 * @param file           the local file
+	 * 添加文件
+	 * @param md5  文件key, 由调用应用生成
+	 * @param file	文件信息
+	 * @return url  能够访问到文件的 url
 	 */
 	public String addHttpResouce(String md5, File file){
 		return httpFileServer.addFile(getLocalIp(), md5, file);
@@ -125,8 +125,7 @@ public class HotPotHttpFileService {
 	
 	
 	/**
-	 * stop the http server and
-	 * close the hotpot
+	 * 停止http server
 	 */
 	public void stopHttpShare(){
 		
@@ -154,7 +153,8 @@ public class HotPotHttpFileService {
 	}
 	
 	/**
-	 * start ap hotpot and start http server
+	 * 创建热点
+	 * @param ssid
 	 */
 	private  void createApShareCircle(String ssid) {
 		
@@ -227,7 +227,7 @@ public class HotPotHttpFileService {
 	}
 	
 	/**
-	 * create lan hotpot
+	 * 创建局域网类型server
 	 */
 	private void createLanShareCircle() {
 		final ShareCircleInfo shareCircleInfo = new ShareCircleInfo(shareCircleName, ShareCircleType.WIFILAN, appInfo);
@@ -246,8 +246,8 @@ public class HotPotHttpFileService {
 	}
 	
 	/**
-	 * get local ap ip;
-	 * @return
+	 * 返回本机ip
+	 * @return ip
 	 */
 	private String getLocalIp() {
 		int timeoutCount = 0;

@@ -19,6 +19,7 @@ import android.os.Handler;
  */
 public class HttpFileServer extends NanoHTTPD {
 
+	
 	private static  Map<String, File> fileServiceMap;
 	private static boolean running = true;
 	private static final int HTTP_PORT = 8080;
@@ -28,15 +29,6 @@ public class HttpFileServer extends NanoHTTPD {
 	 */
 	protected Handler handler;
 
-    /*public static HttpFileServer getInstance(){
-    	return server;
-    }
-	
-	private HttpFileServer() {
-		super(HTTP_PORT);
-		fileServiceMap = new HashMap<String, File>();
-	}*/
-	
 	public HttpFileServer(int port) {
 		super(port);
 		fileServiceMap = new HashMap<String, File>();
@@ -75,16 +67,17 @@ public class HttpFileServer extends NanoHTTPD {
 	private static final Response NOT_FOUND_RESPONSE = new Response(
 			Response.Status.NOT_FOUND, "text/html", "not found");
 
+	/**
+	 * 对请求的url 返回 流或普通字符串
+	 */
 	@Override
 	public Response serve(IHTTPSession session) {
-		
 		//String type ="application/vnd.android.package-archive";
 		String type = "application/octet-stream";
 		String uri = session.getUri();
-	
+		
 		System.out.println("session uri:  "+uri);
 		if (fileServiceMap.containsKey(uri)) {
-			System.out.println("contains:  "+uri);
 			return serveFile(uri, session.getHeaders(),
 					fileServiceMap.get(uri), type);
 		} 
@@ -93,14 +86,14 @@ public class HttpFileServer extends NanoHTTPD {
 	}
 
 	/**
-	 * response info or files to the client
-	 * @param uri
-	 * @param header
-	 * @param file
-	 * @param mime
+	 * 对请求的url 返回 流或普通字符串
+	 * @param uri  文件url
+	 * @param header 请求头
+	 * @param file 文件
+	 * @param mime 文件类型
 	 * @return
 	 */
-	Response serveFile(String uri, Map<String, String> header, File file,
+	private Response serveFile(String uri, Map<String, String> header, File file,
 			String mime) {
 		Response res;
 		try {
@@ -179,6 +172,13 @@ public class HttpFileServer extends NanoHTTPD {
 		return res;
 	}
 
+	/**
+	 * 返回response 流格式
+	 * @param status
+	 * @param mimeType
+	 * @param message
+	 * @return
+	 */
 	private Response createResponse(Response.Status status, String mimeType,
 			InputStream message) {
 		Response res = new Response(status, mimeType, message);
@@ -186,7 +186,13 @@ public class HttpFileServer extends NanoHTTPD {
 		return res;
 	}
 
-	// Announce that the file server accepts partial content requests
+    /**
+     * 返回 response 普通文本
+     * @param status
+     * @param mimeType
+     * @param message
+     * @return
+     */
 	private Response createResponse(Response.Status status, String mimeType,
 			String message) {
 		Response res = new Response(status, mimeType, message);
@@ -195,15 +201,15 @@ public class HttpFileServer extends NanoHTTPD {
 	}
 
 	/**
-	 * use a thread start the server;
-	 * @throws IOException 
+	 * 启动http server
+	 * @throws IOException
 	 */
 	public void startServer() throws IOException {
 		super.start();
 	}
 	
 	/**
-	 * stop this http server
+	 * 停止http server
 	 */
 	public void stopServer() {
 		System.out.println("stop http server!");
