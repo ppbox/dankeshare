@@ -114,7 +114,6 @@ public class HotPotHttpFileService {
 					shareType = ShareCircleType.WIFIAP;
 				}
 			}
-			
 			if (shareType.equals(ShareCircleType.WIFIAP)) {
 				this.createApShareCircle(ssid);
 			} else if (shareType.equals(ShareCircleType.WIFILAN)) {
@@ -166,8 +165,8 @@ public class HotPotHttpFileService {
 	 * @return url  能够访问到文件的 url
 	 */
 	public String addHttpResouce(File file){
-		 UUID uuid = UUID.randomUUID();
-		return httpFileServer.addFile(getLocalIp(),"k", file);
+		UUID uuid = UUID.randomUUID();
+		return httpFileServer.addFile(getLocalIp(),uuid.toString(), file);
 	}
 	
 	
