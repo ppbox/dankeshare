@@ -91,6 +91,7 @@ public class HotPotHttpFileService {
 	 * @param ssid    名称
 	 * @param shareType 启动类型
 	 * @param port  端口号
+	 * @param needHotPot 启动服务器时是否需要先启动热点
 	 * @param result 操作结果
 	 * @param context android context
 	 */
