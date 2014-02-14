@@ -93,7 +93,7 @@ public class HotPotHttpFileService {
 	 * ap style
 	 * lan style
 	 */
-	public void startHttpshare(String ssid,ShareCircleType shareType,int port,CreateShareCircleResult result,Context context) {
+	public void startHttpShare(String ssid,ShareCircleType shareType,int port,CreateShareCircleResult result,Context context) {
 		
 		if( port<=0 ){
 			port = HTTP_PORT;
