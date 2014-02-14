@@ -61,6 +61,9 @@ public class HotPotHttpFileService {
 	 */
 	protected Handler handler;
 	
+	/**
+	 * http server 类
+	 */
 	private HttpFileServer httpFileServer; 
 	
 	/**
@@ -154,11 +157,10 @@ public class HotPotHttpFileService {
 	
 	/**
 	 * 创建热点
-	 * @param ssid
+	 * @param ssid 热点名称
 	 */
 	private  void createApShareCircle(String ssid) {
 		
-		Log.d(LogUtil.LOG_TAG, "Start creating AP ShareCircle.");
 		WifiConfiguration config = wifiApManager.creatSimpleConfig(ssid);
 		Log.d(LogUtil.LOG_TAG, "Create SSID " + ssid + " without sharedKey ");
 		
@@ -176,7 +178,6 @@ public class HotPotHttpFileService {
 									createResult.onFailed();
 								}
 							});
-							
 							return;
 						}
 						Log.i(LogUtil.LOG_TAG, "hot ip: "+ip);
@@ -191,7 +192,6 @@ public class HotPotHttpFileService {
 								}
 							});
 						}
-						
 					}
 				}.start();
 				
