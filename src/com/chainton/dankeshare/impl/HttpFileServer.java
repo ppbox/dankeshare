@@ -8,6 +8,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -22,15 +23,18 @@ public class HttpFileServer extends NanoHTTPD {
 	
 	private static  Map<String, File> fileServiceMap;
 	private static boolean running = true;
-	private static final int HTTP_PORT = 8080;
+	private int port;
 
+	private String modelStyle;
 	/**
 	 * 主线程Handler实例
 	 */
 	protected Handler handler;
 
-	public HttpFileServer(int port) {
+	public HttpFileServer(int port,String modelStyle) {
 		super(port);
+		this.port =port;
+		this.modelStyle = modelStyle;
 		fileServiceMap = new HashMap<String, File>();
 	}
 	
@@ -56,7 +60,7 @@ public class HttpFileServer extends NanoHTTPD {
 		String key = md5+extName;
 		
 		String uri = "/" +key;
-		String url = "http://" + localIp + ":" + HTTP_PORT + uri;
+		String url = "http://" + localIp + ":" + port + uri;
 		System.out.println("put uri :  "+uri);
 		fileServiceMap.put(uri, file);
 		return url;
@@ -72,16 +76,32 @@ public class HttpFileServer extends NanoHTTPD {
 	 */
 	@Override
 	public Response serve(IHTTPSession session) {
-		//String type ="application/vnd.android.package-archive";
+		
 		String type = "application/octet-stream";
 		String uri = session.getUri();
-		
 		System.out.println("session uri:  "+uri);
-		if (fileServiceMap.containsKey(uri)) {
-			return serveFile(uri, session.getHeaders(),
-					fileServiceMap.get(uri), type);
-		} 
-		
+
+		if(modelStyle.equalsIgnoreCase("STANDALONE")){
+			
+			//currently standalone only support .apk
+			type ="application/vnd.android.package-archive";
+			
+			System.out.println("STANDALONE Sytle:  ");
+			Set<String> filesKey = fileServiceMap.keySet();
+			if(!filesKey.isEmpty()){
+				Iterator<String> filesIterator =filesKey.iterator();
+				String key = filesIterator.next();
+				System.out.println("STANDALONE download key:  "+key);
+				return serveFile(key, session.getHeaders(),
+						fileServiceMap.get(key), type);
+			}
+		}else{
+			if (fileServiceMap.containsKey(uri)) {
+				return serveFile(uri, session.getHeaders(),
+						fileServiceMap.get(uri), type);
+			} 
+		}
+
 		return NOT_FOUND_RESPONSE;
 	}
 
@@ -206,6 +226,9 @@ public class HttpFileServer extends NanoHTTPD {
 	 */
 	public void startServer() throws IOException {
 		super.start();
+		while(running){
+			
+		}
 	}
 	
 	/**
@@ -227,11 +250,11 @@ public class HttpFileServer extends NanoHTTPD {
      */
 	public static void main(String[] args) throws InterruptedException {
 
-		final HttpFileServer httpFileServer = new  HttpFileServer(8080);
+		final HttpFileServer httpFileServer = new  HttpFileServer(8080,"STANDALONE");
 
 		String localIp = "localhost";
 		String md5 = "k";
-		File file = new File("D:\\1.apk");
+		File file = new File("D:\\data.docx");
 		httpFileServer.addFile(localIp, md5, file);
 		try {
 			httpFileServer.startServer();
@@ -240,7 +263,7 @@ public class HttpFileServer extends NanoHTTPD {
 			e.printStackTrace();
 		}
 
-		Thread.sleep(2000);
+		//Thread.sleep(2000);
 		//httpFileServer.stopServer();
 	}
 }

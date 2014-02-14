@@ -4,6 +4,8 @@
 package com.chainton.dankeshare.impl;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.UUID;
 
 import android.content.Context;
 import android.net.wifi.WifiConfiguration;
@@ -72,6 +74,10 @@ public class HotPotHttpFileService {
 	private static final int HTTP_PORT = 8080;
 
 	
+	private static final String STANDALONE_STYLE = "STANDALONE";
+	private static final String SHARE_STYLE = "SHARE";
+	
+	
 	private HotPotHttpFileService(){
 		
 	}
@@ -88,32 +94,69 @@ public class HotPotHttpFileService {
 	 * @param result 操作结果
 	 * @param context android context
 	 */
-	public void startHttpShare(String ssid,ShareCircleType shareType,int port,CreateShareCircleResult result,Context context) {
+	public void startHttpShare(String ssid,ShareCircleType shareType,int port,boolean needHotPot,CreateShareCircleResult result,Context context) {
 		
 		if( port<=0 ){
 			port = HTTP_PORT;
 		}
-		httpFileServer = new HttpFileServer(port);
-		System.out.println("port:  "+port);
-		
+		httpFileServer = new HttpFileServer(port,SHARE_STYLE);
+		this.createResult = result;
 		this.context = context.getApplicationContext();
 		this.wifiApManager = new DefaultWifiApManager(this.context);
 		this.handler = new Handler(this.context.getMainLooper());
 		
-		if (shareType == ShareCircleType.AUTO) {
-			if (this.wifiApManager. isWifiConnected()) {
-				shareType = ShareCircleType.WIFILAN;
-			} else {
-				shareType = ShareCircleType.WIFIAP;
+		//是否需要启动热点
+		if(needHotPot){
+			if (shareType == ShareCircleType.AUTO) {
+				if (this.wifiApManager. isWifiConnected()) {
+					shareType = ShareCircleType.WIFILAN;
+				} else {
+					shareType = ShareCircleType.WIFIAP;
+				}
 			}
+			
+			if (shareType.equals(ShareCircleType.WIFIAP)) {
+				this.createApShareCircle(ssid);
+			} else if (shareType.equals(ShareCircleType.WIFILAN)) {
+				this.createLanShareCircle();
+			}
+		}else{
+			new Thread() {
+				@Override
+				public void run() {
+					try {
+						httpFileServer.startServer();
+					} catch (IOException e) {
+						handler.post(new Runnable() {
+							@Override
+							public void run() {
+								createResult.onFailed();
+							}
+						});
+					}
+				}
+			}.start();
 		}
 		
-		if (shareType.equals(ShareCircleType.WIFIAP)) {
-			this.createApShareCircle(ssid);
-		} else if (shareType.equals(ShareCircleType.WIFILAN)) {
-			this.createLanShareCircle();
-		}
+	}
+	
+	/**
+	 * 启动 http 服务器只分享一次文件
+	 * @param ssid    名称
+	 * @param result 操作结果
+	 * @param context android context
+	 * @param file 要分享的文件
+	 */
+	public String shareOneFile(String ssid,CreateShareCircleResult result,Context context,File file) {
 		
+		this.httpFileServer = new HttpFileServer(HTTP_PORT,STANDALONE_STYLE);
+		this.createResult = result;
+		this.context = context.getApplicationContext();
+		this.wifiApManager = new DefaultWifiApManager(this.context);
+		this.handler = new Handler(this.context.getMainLooper());
+
+		this.createApShareCircle(ssid);
+		return this.addHttpResouce(file);
 	}
 	
 	/**
@@ -122,8 +165,9 @@ public class HotPotHttpFileService {
 	 * @param file	文件信息
 	 * @return url  能够访问到文件的 url
 	 */
-	public String addHttpResouce(String md5, File file){
-		return httpFileServer.addFile(getLocalIp(), md5, file);
+	public String addHttpResouce(File file){
+		 UUID uuid = UUID.randomUUID();
+		return httpFileServer.addFile(getLocalIp(),"k", file);
 	}
 	
 	
@@ -155,6 +199,9 @@ public class HotPotHttpFileService {
 		});
 	}
 	
+	
+	
+	
 	/**
 	 * 创建热点
 	 * @param ssid 热点名称
@@ -181,10 +228,9 @@ public class HotPotHttpFileService {
 							return;
 						}
 						Log.i(LogUtil.LOG_TAG, "hot ip: "+ip);
-						
-						try{
+						try {
 							httpFileServer.startServer();
-						}catch(Exception e){
+						} catch (IOException e) {
 							handler.post(new Runnable() {
 								@Override
 								public void run() {
