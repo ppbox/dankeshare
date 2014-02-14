@@ -20,6 +20,7 @@ import com.chainton.dankeshare.data.ShareCircleAppInfo;
 import com.chainton.dankeshare.data.ShareCircleInfo;
 import com.chainton.dankeshare.data.enums.ShareCircleType;
 import com.chainton.dankeshare.util.LogUtil;
+import com.chainton.dankeshare.util.NetworkUtil;
 import com.chainton.dankeshare.wifi.DefaultWifiApManager;
 import com.chainton.dankeshare.wifi.DefaultWifiApNameCodec;
 import com.chainton.dankeshare.wifi.WifiApShareCircleInfo;
@@ -156,9 +157,9 @@ public class HotPotHttpFileService {
 	 * start ap hotpot and start http server
 	 */
 	private  void createApShareCircle(String ssid, String shareKey) {
-		Log.d(LogUtil.LOG_TAG, "Start creating AP ShareCircle.");
-		WifiConfiguration config = wifiApManager.createWifiApConfig(ssid,shareKey);
 		
+		Log.d(LogUtil.LOG_TAG, "Start creating AP ShareCircle.");
+		WifiConfiguration config = wifiApManager.creatSimpleConfig(ssid);
 		Log.d(LogUtil.LOG_TAG, "Create SSID " + ssid + " with sharedKey " + shareKey);
 		
 		wifiApManager.openWifiAp(config, new OperationResult() {
@@ -249,7 +250,17 @@ public class HotPotHttpFileService {
 	 * @return
 	 */
 	private String getLocalIp() {
-		String ip = wifiApManager.getApLocalIp();
+		int timeoutCount = 0;
+		String ip = null;
+		while (timeoutCount <= NetworkUtil.GET_LOCAL_IP_TIMEOUT) {
+			ip = wifiApManager.getApLocalIp();
+			try {
+				Thread.sleep(500);
+			} catch (Exception e) {
+				Log.e(LogUtil.LOG_TAG, Log.getStackTraceString(e));
+			}
+			timeoutCount += 500;
+		}
 		return ip;
 	}
 }
