@@ -26,7 +26,7 @@ import com.chainton.dankeshare.wifi.DefaultWifiApManager;
  * @author Soar
  *
  */
-public class HotPotHttpFileService {
+public class HotspotHttpFileService {
 	
 	/**
 	 * 操作wifi 的 manager 接口类
@@ -56,7 +56,7 @@ public class HotPotHttpFileService {
 	 */
 	private Context context;
 	
-	private static HotPotHttpFileService hotPotHttpFileService = new HotPotHttpFileService();
+	private static HotspotHttpFileService hotPotHttpFileService = new HotspotHttpFileService();
 	
 	/**
 	 * 主线程Handler实例
@@ -78,11 +78,11 @@ public class HotPotHttpFileService {
 	private static final String SHARE_STYLE = "SHARE";
 	
 	
-	private HotPotHttpFileService(){
+	private HotspotHttpFileService(){
 		
 	}
 	
-	public static HotPotHttpFileService getInstance(){
+	public static HotspotHttpFileService getInstance(){
 		return hotPotHttpFileService;
 	}
 	
