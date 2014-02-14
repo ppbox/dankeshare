@@ -93,7 +93,7 @@ public class HotPotHttpFileService {
 	 * ap style
 	 * lan style
 	 */
-	public void startHttpshare(String ssid,String shareKey,ShareCircleType shareType,int port,CreateShareCircleResult result,Context context) {
+	public void startHttpshare(String ssid,ShareCircleType shareType,int port,CreateShareCircleResult result,Context context) {
 		
 		if( port<=0 ){
 			port = HTTP_PORT;
@@ -106,7 +106,7 @@ public class HotPotHttpFileService {
 		this.wifiApManager = new DefaultWifiApManager(this.context);
 		this.handler = new Handler(this.context.getMainLooper());
 		if (shareType.equals(ShareCircleType.WIFIAP)) {
-			this.createApShareCircle(ssid,shareKey);
+			this.createApShareCircle(ssid);
 		} else if (shareType.equals(ShareCircleType.WIFILAN)) {
 			this.createLanShareCircle();
 		}
@@ -156,11 +156,11 @@ public class HotPotHttpFileService {
 	/**
 	 * start ap hotpot and start http server
 	 */
-	private  void createApShareCircle(String ssid, String shareKey) {
+	private  void createApShareCircle(String ssid) {
 		
 		Log.d(LogUtil.LOG_TAG, "Start creating AP ShareCircle.");
 		WifiConfiguration config = wifiApManager.creatSimpleConfig(ssid);
-		Log.d(LogUtil.LOG_TAG, "Create SSID " + ssid + " with sharedKey " + shareKey);
+		Log.d(LogUtil.LOG_TAG, "Create SSID " + ssid + " without sharedKey ");
 		
 		wifiApManager.openWifiAp(config, new OperationResult() {
 			@Override
