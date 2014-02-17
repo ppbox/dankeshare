@@ -13,6 +13,7 @@ import android.os.Handler;
 import android.util.Log;
 
 import com.chainton.dankeshare.CreateShareCircleResult;
+import com.chainton.dankeshare.HotspotHttpResult;
 import com.chainton.dankeshare.OperationResult;
 import com.chainton.dankeshare.data.ClientInfo;
 import com.chainton.dankeshare.data.ShareCircleAppInfo;
@@ -49,7 +50,7 @@ public class HotspotHttpFileService {
 	/**
 	 * 创建结果回调接口
 	 */
-	private CreateShareCircleResult createResult;
+	private HotspotHttpResult createResult;
 
 	/**
 	 * android context
@@ -95,7 +96,7 @@ public class HotspotHttpFileService {
 	 * @param result 操作结果
 	 * @param context android context
 	 */
-	public void startHttpShare(String ssid,ShareCircleType shareType,int port,boolean needHotPot,CreateShareCircleResult result,Context context) {
+	public void startHttpShare(String ssid,ShareCircleType shareType,int port,boolean needHotPot,HotspotHttpResult result,Context context) {
 		
 		if( port<=0 ){
 			port = HTTP_PORT;
@@ -147,7 +148,7 @@ public class HotspotHttpFileService {
 	 * @param context android context
 	 * @param file 要分享的文件
 	 */
-	public String shareOneFile(String ssid,CreateShareCircleResult result,Context context,File file) {
+	public void shareOneFile(String ssid,HotspotHttpResult result,Context context,File file) {
 		
 		this.httpFileServer = new HttpFileServer(HTTP_PORT,STANDALONE_STYLE);
 		this.createResult = result;
@@ -156,7 +157,7 @@ public class HotspotHttpFileService {
 		this.handler = new Handler(this.context.getMainLooper());
 
 		this.createApShareCircle(ssid);
-		return this.addHttpResouce(file);
+		result.fileUrl( this.addHttpResouce(file) );
 	}
 	
 	/**
