@@ -114,7 +114,7 @@ public class HotspotHttpFileService {
 
 							@Override
 							public void onSucceed() {
-								result.onSucceed();
+								result.onSucceed(null);
 							}
 							@Override
 							public void onFailed() {
@@ -189,6 +189,7 @@ public class HotspotHttpFileService {
 	
 	/**
 	 * 停止http server
+	 * @param HotspotHttpResult  回调函数
 	 */
 	public void stopHttpShare(final HotspotHttpResult result){
 		
@@ -199,26 +200,7 @@ public class HotspotHttpFileService {
 
 		//关闭热点服务
 		if(needHotPot){
-			wifiApManager.closeWifiAp(new OperationResult() {
-				@Override
-				public void onSucceed() {
-					handler.post(new Runnable() {
-						@Override
-						public void run() {
-							result.onSucceed();
-						}
-					});
-				}
-				@Override
-				public void onFailed() {
-					handler.post(new Runnable() {
-						@Override
-						public void run() {
-							result.onFailed();
-						}
-					});
-				}
-			});
+			closeWifiHotspot(this.wifiApManager,result);
 		}
 	}
 	
@@ -260,13 +242,11 @@ public class HotspotHttpFileService {
 										handler.post(new Runnable() {
 											@Override
 											public void run() {
-												result.onSucceed();
-												result.onFileUrlGen( url.substring(0, url.lastIndexOf("/")));
-												
+												result.onSucceed(url.substring(0, url.lastIndexOf("/")));
 											}
 										});
 									}else{
-										result.onSucceed();
+										result.onSucceed(null);
 									}
 									
 								}
@@ -296,30 +276,37 @@ public class HotspotHttpFileService {
 			}
 			@Override
 			public void onFailed() {
-				
-				wifiApManager.closeWifiAp(new OperationResult() {
+				closeWifiHotspot(wifiApManager,result);
+			}
+		});
+	}
+	
+	/**
+	 * 关闭wifi 热点
+	 * @param result 回调函数
+	 * @param wifiApManager 管理wifi 类
+	 */
+	private void closeWifiHotspot(DefaultWifiApManager wifiApManager, final HotspotHttpResult result){
+		wifiApManager.closeWifiAp(new OperationResult() {
+			@Override
+			public void onSucceed() {
+				handler.post(new Runnable() {
 					@Override
-					public void onSucceed() {
-						handler.post(new Runnable() {
-							@Override
-							public void run() {
-								result.onFailed();
-							}
-						});
-					
-					}
-					@Override
-					public void onFailed() {
-						handler.post(new Runnable() {
-							@Override
-							public void run() {
-								result.onFailed();
-							}
-						});
-						
+					public void run() {
+						result.onFailed();
 					}
 				});
 			
+			}
+			@Override
+			public void onFailed() {
+				handler.post(new Runnable() {
+					@Override
+					public void run() {
+						result.onFailed();
+					}
+				});
+				
 			}
 		});
 	}

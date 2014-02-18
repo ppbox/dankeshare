@@ -252,14 +252,14 @@ public class HttpFileServer extends NanoHTTPD {
 	/**
 	 * 停止http server
 	 */
-	public synchronized void stopServer() {
+	public void stopServer() {
 		if(running){
 			running = false;
-			if(super.isAlive()){
+			if(null != this && super.isAlive()){
 				super.stop();
 			}
 		}
-		System.out.println("stop success!");
+		System.out.println("http server stop success!");
 	}
 
     /**
