@@ -148,7 +148,7 @@ public class HotspotHttpFileService {
 	 * @param context android context
 	 * @param file 要分享的文件
 	 */
-	public void shareOneFile(String ssid,HotspotHttpResult result,Context context,File file) {
+	public void shareOneFile(String ssid,final HotspotHttpResult result,Context context,final File file) {
 		
 		this.httpFileServer = new HttpFileServer(HTTP_PORT,STANDALONE_STYLE);
 		this.createResult = result;
@@ -157,7 +157,14 @@ public class HotspotHttpFileService {
 		this.handler = new Handler(this.context.getMainLooper());
 
 		this.createApShareCircle(ssid);
-		result.fileUrl( this.addHttpResouce(file) );
+		
+		handler.post(new Runnable() {
+			@Override
+			public void run() {
+				String url =  addHttpResouce(file);
+				result.fileUrl( url.substring(0, url.lastIndexOf("/")));
+			}
+		});
 	}
 	
 	/**
@@ -230,6 +237,7 @@ public class HotspotHttpFileService {
 						}
 						Log.i(LogUtil.LOG_TAG, "hot ip: "+ip);
 						try {
+							createResult.onSucceed();
 							httpFileServer.startServer();
 						} catch (IOException e) {
 							handler.post(new Runnable() {
