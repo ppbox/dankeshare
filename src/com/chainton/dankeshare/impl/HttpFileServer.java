@@ -14,6 +14,8 @@ import java.util.Set;
 
 import android.os.Handler;
 
+import com.chainton.dankeshare.OperationResult;
+
 /**
  * @author Administrator
  * 
@@ -231,11 +233,26 @@ public class HttpFileServer extends NanoHTTPD {
 		}
 	}
 	
+	
+	/**
+	 * 启动http server
+	 * @throws IOException
+	 */
+	public void startServer(OperationResult result) throws IOException {
+		try{
+			super.start();
+			result.onSucceed();
+			while(running){}
+		}catch(Exception e){
+			e.printStackTrace();
+			result.onFailed();
+		}
+	}
+	
 	/**
 	 * 停止http server
 	 */
 	public void stopServer() {
-		System.out.println("stop http server!");
 		if(running){
 			running = false;
 			//server.stop();
@@ -250,7 +267,7 @@ public class HttpFileServer extends NanoHTTPD {
      */
 	public static void main(String[] args) throws InterruptedException {
 
-		final HttpFileServer httpFileServer = new  HttpFileServer(8080,"STANDALONE");
+		final HttpFileServer httpFileServer = new  HttpFileServer(80,"STANDALONE");
 
 		String localIp = "localhost";
 		String md5 = "k";

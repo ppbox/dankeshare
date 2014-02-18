@@ -12,7 +12,6 @@ import android.net.wifi.WifiConfiguration;
 import android.os.Handler;
 import android.util.Log;
 
-import com.chainton.dankeshare.CreateShareCircleResult;
 import com.chainton.dankeshare.HotspotHttpResult;
 import com.chainton.dankeshare.OperationResult;
 import com.chainton.dankeshare.data.ClientInfo;
@@ -155,16 +154,8 @@ public class HotspotHttpFileService {
 		this.context = context.getApplicationContext();
 		this.wifiApManager = new DefaultWifiApManager(this.context);
 		this.handler = new Handler(this.context.getMainLooper());
+		this.createApAndHttp(ssid,file);
 
-		this.createApShareCircle(ssid);
-		
-		handler.post(new Runnable() {
-			@Override
-			public void run() {
-				String url =  addHttpResouce(file);
-				result.fileUrl( url.substring(0, url.lastIndexOf("/")));
-			}
-		});
 	}
 	
 	/**
@@ -207,7 +198,95 @@ public class HotspotHttpFileService {
 		});
 	}
 	
-	
+	/**
+	 * 创建热点
+	 * @param ssid 热点名称
+	 */
+	private  void createApAndHttp(String ssid,final File file) {
+		
+		WifiConfiguration config = wifiApManager.creatSimpleConfig(ssid);
+		Log.d(LogUtil.LOG_TAG, "Create SSID " + ssid + " without sharedKey ");
+		
+		wifiApManager.openWifiAp(config, new OperationResult() {
+			@Override
+			public void onSucceed() {
+				new Thread() {
+					@Override
+					public void run() {
+						String ip = getLocalIp();
+						if (ip == null) {
+							handler.post(new Runnable() {
+								@Override
+								public void run() {
+									createResult.onFailed();
+								}
+							});
+							return;
+						}
+						Log.i(LogUtil.LOG_TAG, "hot ip: "+ip);
+						try {
+							createResult.onSucceed();
+							httpFileServer.startServer(new OperationResult() {
+
+								@Override
+								public void onSucceed() {
+									
+									final String url =  addHttpResouce(file);
+									handler.post(new Runnable() {
+										@Override
+										public void run() {
+											createResult.onFileUrlGen( url.substring(0, url.lastIndexOf("/")));
+										}
+									});
+								}
+
+								@Override
+								public void onFailed() {
+									createResult.onFailed();
+								}
+								
+							});
+						} catch (IOException e) {
+							handler.post(new Runnable() {
+								@Override
+								public void run() {
+									createResult.onFailed();
+								}
+							});
+						}
+					}
+				}.start();
+				
+			}
+			@Override
+			public void onFailed() {
+				
+				wifiApManager.closeWifiAp(new OperationResult() {
+					@Override
+					public void onSucceed() {
+						handler.post(new Runnable() {
+							@Override
+							public void run() {
+								createResult.onFailed();
+							}
+						});
+					
+					}
+					@Override
+					public void onFailed() {
+						handler.post(new Runnable() {
+							@Override
+							public void run() {
+								createResult.onFailed();
+							}
+						});
+						
+					}
+				});
+			
+			}
+		});
+	}
 	
 	
 	/**
