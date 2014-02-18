@@ -35,11 +35,6 @@ public class HotspotHttpFileService {
 	private DefaultWifiApManager wifiApManager;
 	
 	/**
-	 * 创建结果回调接口
-	 */
-	private HotspotHttpResult createResult;
-
-	/**
 	 * android context
 	 */
 	private Context context;
@@ -84,13 +79,13 @@ public class HotspotHttpFileService {
 	 * @param result 操作结果
 	 * @param context android context
 	 */
-	public void startHttpShare(String ssid,ShareCircleType shareType,int port,boolean needHotPot,HotspotHttpResult result,Context context) {
+	public void startHttpShare(String ssid,ShareCircleType shareType,int port,boolean needHotPot,final HotspotHttpResult result,Context context) {
 		
 		if( port<=0 ){
 			port = HTTP_PORT;
 		}
 		httpFileServer = new HttpFileServer(port,SHARE_STYLE);
-		this.createResult = result;
+
 		this.context = context.getApplicationContext();
 		this.wifiApManager = new DefaultWifiApManager(this.context);
 		this.handler = new Handler(this.context.getMainLooper());
@@ -106,12 +101,12 @@ public class HotspotHttpFileService {
 				}
 			}
 			if (shareType.equals(ShareCircleType.WIFIAP)) {
-				this.createApShareCircle(ssid);
+				this.createApAndHttp(ssid,null, result);
 			} else if (shareType.equals(ShareCircleType.WIFILAN)) {
-				this.createLanShareCircle();
+				this.createLanShareCircle(result);
 			}
 		}else{
-			GlobalUtil.threadExecutor().execute(new Runnable() {
+			new Thread() {
 				@Override
 				public void run() {
 					try {
@@ -119,11 +114,11 @@ public class HotspotHttpFileService {
 
 							@Override
 							public void onSucceed() {
-								createResult.onSucceed();
+								result.onSucceed();
 							}
 							@Override
 							public void onFailed() {
-								createResult.onFailed();
+								result.onFailed();
 							}
 							
 						});
@@ -131,12 +126,12 @@ public class HotspotHttpFileService {
 						handler.post(new Runnable() {
 							@Override
 							public void run() {
-								createResult.onFailed();
+								result.onFailed();
 							}
 						});
 					}
 				}
-			});
+			}.start();
 		}
 		
 	}
@@ -151,11 +146,10 @@ public class HotspotHttpFileService {
 	public void shareOneFile(String ssid,final HotspotHttpResult result,Context context,final File file) {
 		this.needHotPot = true;
 		this.httpFileServer = new HttpFileServer(HTTP_PORT,STANDALONE_STYLE);
-		this.createResult = result;
 		this.context = context.getApplicationContext();
 		this.wifiApManager = new DefaultWifiApManager(this.context);
 		this.handler = new Handler(this.context.getMainLooper());
-		this.createApAndHttp(ssid,file);
+		this.createApAndHttp(ssid,file,result);
 
 	}
 	
@@ -171,7 +165,7 @@ public class HotspotHttpFileService {
 					@Override
 					public void run() {
 						UUID uuid = UUID.randomUUID();
-						final String url = httpFileServer.addFile(getLocalIp(),"k", file);
+						final String url = httpFileServer.addFile(getLocalIp(),uuid.toString(), file);
 						handler.post(new Runnable() {
 							@Override
 							public void run() {
@@ -196,7 +190,7 @@ public class HotspotHttpFileService {
 	/**
 	 * 停止http server
 	 */
-	public void stopHttpShare(){
+	public void stopHttpShare(final HotspotHttpResult result){
 		
 		//关闭http 服务
 		if(httpFileServer.isRunning()){
@@ -211,7 +205,7 @@ public class HotspotHttpFileService {
 					handler.post(new Runnable() {
 						@Override
 						public void run() {
-							createResult.onSucceed();
+							result.onSucceed();
 						}
 					});
 				}
@@ -220,7 +214,7 @@ public class HotspotHttpFileService {
 					handler.post(new Runnable() {
 						@Override
 						public void run() {
-							createResult.onFailed();
+							result.onFailed();
 						}
 					});
 				}
@@ -232,7 +226,7 @@ public class HotspotHttpFileService {
 	 * 创建热点
 	 * @param ssid 热点名称
 	 */
-	private  void createApAndHttp(String ssid,final File file) {
+	private  void createApAndHttp(String ssid,final File file,final HotspotHttpResult result) {
 		
 		WifiConfiguration config = wifiApManager.creatSimpleConfig(ssid);
 		Log.d(LogUtil.LOG_TAG, "Create SSID " + ssid + " without sharedKey ");
@@ -250,7 +244,7 @@ public class HotspotHttpFileService {
 							handler.post(new Runnable() {
 								@Override
 								public void run() {
-									createResult.onFailed();
+									result.onFailed();
 								}
 							});
 							return;
@@ -260,20 +254,31 @@ public class HotspotHttpFileService {
 							
 							httpFileServer.startServer(new OperationResult() {
 								@Override
-								public void onSucceed() {			
-									final String url =  addOneResouce(ip,file);
-									handler.post(new Runnable() {
-										@Override
-										public void run() {
-											createResult.onFileUrlGen( url.substring(0, url.lastIndexOf("/")));
-											createResult.onSucceed();
-										}
-									});
+								public void onSucceed() {
+									if(null != file){
+										final String url =  addOneResouce(ip,file);
+										handler.post(new Runnable() {
+											@Override
+											public void run() {
+												result.onSucceed();
+												result.onFileUrlGen( url.substring(0, url.lastIndexOf("/")));
+												
+											}
+										});
+									}else{
+										result.onSucceed();
+									}
+									
 								}
 
 								@Override
 								public void onFailed() {
-									createResult.onFailed();
+									handler.post(new Runnable() {
+										@Override
+										public void run() {
+											result.onFailed();
+										}
+									});
 								}
 								
 							});
@@ -281,7 +286,7 @@ public class HotspotHttpFileService {
 							handler.post(new Runnable() {
 								@Override
 								public void run() {
-									createResult.onFailed();
+									result.onFailed();
 								}
 							});
 						}
@@ -298,7 +303,7 @@ public class HotspotHttpFileService {
 						handler.post(new Runnable() {
 							@Override
 							public void run() {
-								createResult.onFailed();
+								result.onFailed();
 							}
 						});
 					
@@ -308,7 +313,7 @@ public class HotspotHttpFileService {
 						handler.post(new Runnable() {
 							@Override
 							public void run() {
-								createResult.onFailed();
+								result.onFailed();
 							}
 						});
 						
@@ -319,97 +324,16 @@ public class HotspotHttpFileService {
 		});
 	}
 	
-	
-	/**
-	 * 创建热点
-	 * @param ssid 热点名称
-	 */
-	private  void createApShareCircle(String ssid) {
-		
-		WifiConfiguration config = wifiApManager.creatSimpleConfig(ssid);
-		Log.d(LogUtil.LOG_TAG, "Create SSID " + ssid + " without sharedKey ");
-		
-		wifiApManager.openWifiAp(config, new OperationResult() {
-			@Override
-			public void onSucceed() {
-				GlobalUtil.threadExecutor().execute(
-					new Runnable() {
-						@Override
-						public void run() {
-							String ip = getLocalIp();
-							if (ip == null) {
-								handler.post(new Runnable() {
-									@Override
-									public void run() {
-										createResult.onFailed();
-									}
-								});
-								return;
-							}
-							Log.i(LogUtil.LOG_TAG, "hot ip: "+ip);
-							try {
-								
-								httpFileServer.startServer(new OperationResult(){
-
-									@Override
-									public void onSucceed() {
-										createResult.onSucceed();
-									}
-									@Override
-									public void onFailed() {
-										createResult.onFailed();
-									}
-									
-								});
-							} catch (IOException e) {
-								handler.post(new Runnable() {
-									@Override
-									public void run() {
-										createResult.onFailed();
-									}
-								});
-							}
-						}
-					});
-			}
-			@Override
-			public void onFailed() {
-				
-				wifiApManager.closeWifiAp(new OperationResult() {
-					@Override
-					public void onSucceed() {
-						handler.post(new Runnable() {
-							@Override
-							public void run() {
-								createResult.onFailed();
-							}
-						});
-					
-					}
-					@Override
-					public void onFailed() {
-						handler.post(new Runnable() {
-							@Override
-							public void run() {
-								createResult.onFailed();
-							}
-						});
-					}
-				});
-			}
-		});
-	}
-	
 	/**
 	 * 创建局域网类型server
 	 */
-	private void createLanShareCircle() {
+	private void createLanShareCircle(final HotspotHttpResult result) {
 		String ip = getLocalIp();
 		if (ip == null) {
 			handler.post(new Runnable() {
 				@Override
 				public void run() {
-					createResult.onFailed();
+					result.onFailed();
 				}
 			});
 			return;
