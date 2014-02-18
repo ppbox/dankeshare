@@ -10,14 +10,8 @@ package com.chainton.dankeshare;
  * @author Soar
  *
  */
-public interface HotspotHttpResult{
+public interface HotspotHttpResult extends HttpFileResult{
 	
-
-    /**
-     * 返回添加一个文件时的回调函数
-     * @param url
-     */
-	void fileUrl(String url);
 
 	/**
 	 * 创建分享圈成功时回调

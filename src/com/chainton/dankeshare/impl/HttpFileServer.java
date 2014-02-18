@@ -233,7 +233,13 @@ public class HttpFileServer extends NanoHTTPD {
 		}
 	}
 	
-	
+	/**
+	 * 返回http 服务器是否启动状态
+	 * @return
+	 */
+	public boolean isRunning(){
+		return running;
+	}
 	/**
 	 * 启动http server
 	 * @throws IOException
