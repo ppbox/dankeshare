@@ -24,7 +24,7 @@ public class HttpFileServer extends NanoHTTPD {
 
 	
 	private static  Map<String, File> fileServiceMap;
-	private static boolean running = true;
+	private boolean running = true;
 	private int port;
 
 	private String modelStyle;
@@ -222,17 +222,7 @@ public class HttpFileServer extends NanoHTTPD {
 		return res;
 	}
 
-	/**
-	 * 启动http server
-	 * @throws IOException
-	 */
-	public void startServer() throws IOException {
-		super.start();
-		while(running){
-			
-		}
-	}
-	
+
 	/**
 	 * 返回http 服务器是否启动状态
 	 * @return
@@ -244,11 +234,15 @@ public class HttpFileServer extends NanoHTTPD {
 	 * 启动http server
 	 * @throws IOException
 	 */
-	public void startServer(OperationResult result) throws IOException {
+	public  void startServer(OperationResult result) throws IOException {
 		try{
 			super.start();
 			result.onSucceed();
-			while(running){}
+			running = true;
+			while(running){
+				System.out.println("http file server ping,  sleep 1000");
+				Thread.sleep(1000);
+			}
 		}catch(Exception e){
 			e.printStackTrace();
 			result.onFailed();
@@ -258,10 +252,13 @@ public class HttpFileServer extends NanoHTTPD {
 	/**
 	 * 停止http server
 	 */
-	public void stopServer() {
+	public synchronized void stopServer() {
+		System.out.println("start success!");
 		if(running){
 			running = false;
-			//server.stop();
+			if(super.isAlive()){
+				super.stop();
+			}
 		}
 		System.out.println("stop success!");
 	}
@@ -275,18 +272,40 @@ public class HttpFileServer extends NanoHTTPD {
 
 		final HttpFileServer httpFileServer = new  HttpFileServer(80,"STANDALONE");
 
-		String localIp = "localhost";
+		/*String localIp = "localhost";
 		String md5 = "k";
 		File file = new File("D:\\data.docx");
-		httpFileServer.addFile(localIp, md5, file);
+		httpFileServer.addFile(localIp, md5, file);*/
 		try {
-			httpFileServer.startServer();
-		} catch (IOException e) {
+			new Thread(){
+				public void run(){
+					try {
+						httpFileServer.startServer(new OperationResult(){
+
+							@Override
+							public void onSucceed() {
+								System.out.println("ssss");
+							}
+							@Override
+							public void onFailed() {
+								System.out.println("fff");
+							}
+							
+						});
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					
+				}
+			}.start();
+			
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
-		//Thread.sleep(2000);
-		//httpFileServer.stopServer();
+		Thread.sleep(2000);
+		httpFileServer.stopServer();
 	}
 }

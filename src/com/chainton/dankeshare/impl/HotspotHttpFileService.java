@@ -171,7 +171,7 @@ public class HotspotHttpFileService {
 					@Override
 					public void run() {
 						UUID uuid = UUID.randomUUID();
-						final String url = httpFileServer.addFile(getLocalIp(),uuid.toString(), file);
+						final String url = httpFileServer.addFile(getLocalIp(),"k", file);
 						handler.post(new Runnable() {
 							@Override
 							public void run() {
