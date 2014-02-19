@@ -276,6 +276,7 @@ public class HotspotHttpFileService {
 			}
 			@Override
 			public void onFailed() {
+				
 				closeWifiHotspot(wifiApManager,result);
 			}
 		});
@@ -286,29 +287,21 @@ public class HotspotHttpFileService {
 	 * @param result 回调函数
 	 * @param wifiApManager 管理wifi 类
 	 */
-	private void closeWifiHotspot(DefaultWifiApManager wifiApManager, final HotspotHttpResult result){
-		wifiApManager.closeWifiAp(new OperationResult() {
-			@Override
-			public void onSucceed() {
-				handler.post(new Runnable() {
+	private void closeWifiHotspot(final DefaultWifiApManager wifiApManager, final HotspotHttpResult result){
+
+				wifiApManager.closeWifiAp(new OperationResult() {
 					@Override
-					public void run() {
-						result.onFailed();
+					public void onSucceed() {
+						System.out.println("onSucceed");
+					
+					}
+					@Override
+					public void onFailed() {
+						System.out.println("onFailed");
+						
 					}
 				});
-			
-			}
-			@Override
-			public void onFailed() {
-				handler.post(new Runnable() {
-					@Override
-					public void run() {
-						result.onFailed();
-					}
-				});
-				
-			}
-		});
+		
 	}
 	
 	/**
