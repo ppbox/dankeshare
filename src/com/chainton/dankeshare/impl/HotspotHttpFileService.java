@@ -15,8 +15,6 @@ import android.util.Log;
 import com.chainton.dankeshare.HotspotHttpResult;
 import com.chainton.dankeshare.HttpFileResult;
 import com.chainton.dankeshare.OperationResult;
-import com.chainton.dankeshare.data.ClientInfo;
-import com.chainton.dankeshare.data.ShareCircleAppInfo;
 import com.chainton.dankeshare.data.enums.ShareCircleType;
 import com.chainton.dankeshare.util.LogUtil;
 import com.chainton.dankeshare.util.NetworkUtil;
@@ -191,16 +189,33 @@ public class HotspotHttpFileService {
 	 * 停止http server
 	 * @param HotspotHttpResult  回调函数
 	 */
-	public void stopHttpShare(final HotspotHttpResult result){
+	public void stopHttpShare(final OperationResult result){
 		
+		if(null != result){
+			try{
+				stopHttpAndHotspot(result);
+			}catch(Exception e){
+				e.printStackTrace();
+				result.onFailed();
+			}
+		}else{
+			stopHttpAndHotspot(null);
+		}
+		
+	}
+	
+	/**
+	 * 关闭http 和 hotspot 
+	 * @param result
+	 */
+	private void stopHttpAndHotspot(final OperationResult result){
 		//关闭http 服务
 		if(httpFileServer.isRunning()){
 			httpFileServer.stopServer();
 		}
-
 		//关闭热点服务
 		if(needHotPot){
-			closeWifiHotspot(this.wifiApManager,result);
+			wifiApManager.closeWifiAp(result); 
 		}
 	}
 	
@@ -276,34 +291,12 @@ public class HotspotHttpFileService {
 			}
 			@Override
 			public void onFailed() {
-				
-				closeWifiHotspot(wifiApManager,result);
+				wifiApManager.closeWifiAp(null);
 			}
 		});
 	}
 	
-	/**
-	 * 关闭wifi 热点
-	 * @param result 回调函数
-	 * @param wifiApManager 管理wifi 类
-	 */
-	private void closeWifiHotspot(final DefaultWifiApManager wifiApManager, final HotspotHttpResult result){
 
-				wifiApManager.closeWifiAp(new OperationResult() {
-					@Override
-					public void onSucceed() {
-						System.out.println("onSucceed");
-					
-					}
-					@Override
-					public void onFailed() {
-						System.out.println("onFailed");
-						
-					}
-				});
-		
-	}
-	
 	/**
 	 * 创建局域网类型server
 	 */
