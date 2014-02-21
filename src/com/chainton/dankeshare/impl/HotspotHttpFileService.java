@@ -233,10 +233,10 @@ public class HotspotHttpFileService {
 			String ip;
 			@Override
 			public void onSucceed() {
-				GlobalUtil.threadExecutor().execute(new Runnable() {
+				new Thread() {
 					@Override
 					public void run() {
-						ip = getLocalIp();
+						ip = wifiApManager.getApLocalIp();
 						if (ip == null) {
 							handler.post(new Runnable() {
 								@Override
@@ -286,7 +286,7 @@ public class HotspotHttpFileService {
 							});
 						}
 					}
-				});
+				}.start();
 				
 			}
 			@Override
@@ -331,4 +331,5 @@ public class HotspotHttpFileService {
 		}
 		return ip;
 	}
+	
 }
