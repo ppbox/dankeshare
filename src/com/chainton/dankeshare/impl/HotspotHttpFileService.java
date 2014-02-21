@@ -236,7 +236,7 @@ public class HotspotHttpFileService {
 				new Thread() {
 					@Override
 					public void run() {
-						ip = wifiApManager.getApLocalIp();
+						ip = getLocalIp();
 						if (ip == null) {
 							handler.post(new Runnable() {
 								@Override
@@ -322,6 +322,9 @@ public class HotspotHttpFileService {
 		String ip = null;
 		while (timeoutCount <= NetworkUtil.GET_LOCAL_IP_TIMEOUT) {
 			ip = wifiApManager.getApLocalIp();
+			if(null!=ip){
+				break;
+			}
 			try {
 				Thread.sleep(500);
 			} catch (Exception e) {
