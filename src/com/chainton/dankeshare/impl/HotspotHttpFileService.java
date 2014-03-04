@@ -7,7 +7,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.wifi.WifiConfiguration;
 import android.os.Handler;
 import android.util.Log;
@@ -85,7 +88,34 @@ public class HotspotHttpFileService {
 		httpFileServer = new HttpFileServer(port,SHARE_STYLE);
 
 		this.context = context.getApplicationContext();
-		this.wifiApManager = new DefaultWifiApManager(this.context);
+		this.wifiApManager = new DefaultWifiApManager(this.context){
+
+			@Override
+			public Intent myRegisterReceiver(BroadcastReceiver receiver,
+					IntentFilter filter) {
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			@Override
+			public void myUnregisterReceiver(BroadcastReceiver receiver) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void onNotifyWifiConnected() {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void onNotifyWifiConnectFailed() {
+				// TODO Auto-generated method stub
+				
+			}
+			
+		};
 		this.handler = new Handler(this.context.getMainLooper());
 		this.needHotPot = needHotPot;
 		
@@ -145,7 +175,34 @@ public class HotspotHttpFileService {
 		this.needHotPot = true;
 		this.httpFileServer = new HttpFileServer(HTTP_PORT,STANDALONE_STYLE);
 		this.context = context.getApplicationContext();
-		this.wifiApManager = new DefaultWifiApManager(this.context);
+		this.wifiApManager = new DefaultWifiApManager(this.context){
+
+			@Override
+			public Intent myRegisterReceiver(BroadcastReceiver receiver,
+					IntentFilter filter) {
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			@Override
+			public void myUnregisterReceiver(BroadcastReceiver receiver) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void onNotifyWifiConnected() {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void onNotifyWifiConnectFailed() {
+				// TODO Auto-generated method stub
+				
+			}
+			
+		};
 		this.handler = new Handler(this.context.getMainLooper());
 		this.createApAndHttp(ssid,file,result);
 
