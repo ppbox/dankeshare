@@ -14,12 +14,12 @@ import android.util.Log;
 
 import com.chainton.dankeshare.HttpFileResult;
 import com.chainton.dankeshare.data.enums.ShareCircleType;
-import com.chainton.dankeshare.service.WifiControllerCallBack;
 import com.chainton.dankeshare.util.LogUtil;
 import com.chainton.dankeshare.util.NetworkUtil;
 import com.chainton.dankeshare.wifi.util.WifiAdmin;
 import com.chainton.dankeshare.wifi.util.WifiApAdmin;
 import com.chainton.dankeshare.wifi.util.WifiApManagerAdmin;
+import com.chainton.dankeshare.wifi.util.WifiControllerCallBack;
 import com.chainton.dankeshare.wifi.util.WifiUtil;
 import com.chainton.forest.core.util.GlobalUtil;
 
