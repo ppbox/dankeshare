@@ -70,7 +70,7 @@ public class TaskProcessor extends Handler {
 	// 是否停止任务处理器标志
 	private int mIsStopTaskProcessor = 0;
 
-	private WifiApManagerAdmin mWifiManagerAdmin;
+	private WifiApManagerAdmin mWifiApManagerAdmin;
 	private WifiApAdmin mWifiApAdmin;
 	private WifiAdmin mWifiAdmin;
 	private TaskProcessor selfHandler;
@@ -79,7 +79,7 @@ public class TaskProcessor extends Handler {
 		super();
 		// TODO Auto-generated constructor stub
 		mContext = context;
-		mWifiManagerAdmin = new WifiApManagerAdmin(mContext);
+		mWifiApManagerAdmin = new WifiApManagerAdmin(mContext);
 		mWifiAdmin = new WifiAdmin(mContext);
 		mWifiApAdmin = new WifiApAdmin(mContext);
 		mIsStopTaskProcessor = 0;
@@ -93,7 +93,7 @@ public class TaskProcessor extends Handler {
 		super(callback);
 		// TODO Auto-generated constructor stub
 		mContext = context;
-		mWifiManagerAdmin = new WifiApManagerAdmin(mContext);
+		mWifiApManagerAdmin = new WifiApManagerAdmin(mContext);
 		mWifiAdmin = new WifiAdmin(mContext);
 		mWifiApAdmin = new WifiApAdmin(mContext);
 		mIsStopTaskProcessor = 0;
@@ -107,7 +107,7 @@ public class TaskProcessor extends Handler {
 		super(looper, callback);
 		// TODO Auto-generated constructor stub
 		mContext = context;
-		mWifiManagerAdmin = new WifiApManagerAdmin(mContext);
+		mWifiApManagerAdmin = new WifiApManagerAdmin(mContext);
 		mWifiAdmin = new WifiAdmin(mContext);
 		mWifiApAdmin = new WifiApAdmin(mContext);
 		mIsStopTaskProcessor = 0;
@@ -121,7 +121,7 @@ public class TaskProcessor extends Handler {
 		super(looper);
 		// TODO Auto-generated constructor stub
 		mContext = context;
-		mWifiManagerAdmin = new WifiApManagerAdmin(mContext);
+		mWifiApManagerAdmin = new WifiApManagerAdmin(mContext);
 		mWifiAdmin = new WifiAdmin(mContext);
 		mWifiApAdmin = new WifiApAdmin(mContext);
 		mIsStopTaskProcessor = 0;
@@ -151,6 +151,7 @@ public class TaskProcessor extends Handler {
 			Log.w(LogUtil.LOG_TAG_NEW, "--- mTaskProcessorStatus : " + mTaskProcessorStatus);
 			mCurrentState = null;
 			mNextState = null;
+			selfHandler = this;
 			mTaskProcessorStatus = TASKPROCESSOR_RUNNING;
 			// TODO Auto-generated method stub
 			GlobalUtil.threadExecutor().execute(new Runnable() {
@@ -205,9 +206,12 @@ public class TaskProcessor extends Handler {
 								break;
 							case TaskProcessor.STATUS_TASK_OK:
 								if (mNextState != null) {
-									Log.e(LogUtil.LOG_TAG_NEW,
+									Log.w(LogUtil.LOG_TAG_NEW,
 											" find next target state, cancel current state. next statusinfo: "
 													+ mNextState.toString());
+									Log.e(LogUtil.LOG_TAG_NEW,
+											" find next target state, cancel current state. next task type: "
+													+ mNextState.statusTaskType);
 									// 设置任务状态为开始停止
 									mCurrentState.taskStatus = STATUS_TASK_STOPPING;
 									// 停止当前正在执行的任务
@@ -241,9 +245,12 @@ public class TaskProcessor extends Handler {
 							case TaskProcessor.STATUS_TASK_STOP:
 								synchronized (selfHandler) {
 									if (mNextState != null) {
-										Log.e(LogUtil.LOG_TAG_NEW,
+										Log.w(LogUtil.LOG_TAG_NEW,
 												" find next target state, exchange begin. statusinfo: "
 														+ mNextState.toString());
+										Log.e(LogUtil.LOG_TAG_NEW,
+												" find next target state, exchange begin. next task type: "
+														+ mNextState.statusTaskType);
 										// 当前任务已经结束，切换到下一个任务
 										mCurrentState = mNextState;
 										mNextState = null;
@@ -278,7 +285,7 @@ public class TaskProcessor extends Handler {
 		mTaskProcessorStatus = TASKPROCESSOR_CANCELING;
 		// 清空变量
 		mContext = null;
-		mWifiManagerAdmin = null;
+		mWifiApManagerAdmin = null;
 		mWifiAdmin = null;
 		mWifiApAdmin = null;
 		selfHandler = null;
@@ -291,27 +298,29 @@ public class TaskProcessor extends Handler {
 	 * @param resultCallback
 	 */
 	public synchronized boolean setTargetWifiStatus(TargetStatusInfo targetStatusInfo) {
-		// 如果设置的信息不完整，则直接返回信息不完整的错误消息
+		Log.w(LogUtil.LOG_TAG_NEW,
+				" TaskProcessor:  begin to set target wifi status. info: " + targetStatusInfo.toString());
+		Log.e(LogUtil.LOG_TAG_NEW,
+				" TaskProcessor:  begin to set target wifi status. task type: " + targetStatusInfo.statusTaskType);		// 如果设置的信息不完整，则直接返回信息不完整的错误消息
 		// 如果完整，则将该任务放入
 		if (!checkTargetStatusInfo(targetStatusInfo)) {
 			return false;
 		} else {
-			Log.e(LogUtil.LOG_TAG_NEW,
-					" TaskProcessor:  begin to set target wifi status. info: " + targetStatusInfo.toString());
 			// 设置目标状态
 			if (mCurrentState == null) {
 				mCurrentState = targetStatusInfo;
 				mCurrentState.taskStatus = TaskProcessor.STATUS_TASK_WAITING;
-				Log.e(LogUtil.LOG_TAG_NEW, " TaskProcessor: set current state.  " + mCurrentState.toString());
+				Log.w(LogUtil.LOG_TAG_NEW, " TaskProcessor: set current state.  " + mCurrentState.toString());
+				Log.e(LogUtil.LOG_TAG_NEW, " TaskProcessor: set current state task type:  " + mCurrentState.statusTaskType);
 			} else {
 				// 如果发现当前状态已经是需要设置的状态，则直接返回
 				if ((mCurrentState.statusTaskType == targetStatusInfo.statusTaskType)
 						&& ((mCurrentState.taskStatus == STATUS_TASK_WAITING)
 								|| (mCurrentState.taskStatus == STATUS_TASK_STARTING) || (mCurrentState.taskStatus == STATUS_TASK_OK))) {
-					Log.e(LogUtil.LOG_TAG_NEW, " TaskProcessor: current state is already ok. ");
+					Log.e(LogUtil.LOG_TAG_NEW, " TaskProcessor: current state is already ok. target task type: " + targetStatusInfo.statusTaskType);
 					return true;
 				} else {
-					Log.e(LogUtil.LOG_TAG_NEW, " TaskProcessor: set next state. ");
+					Log.e(LogUtil.LOG_TAG_NEW, " TaskProcessor: set next state task type:  " + mCurrentState.statusTaskType);
 					mNextState = targetStatusInfo;
 					mNextState.taskStatus = TaskProcessor.STATUS_TASK_WAITING;
 				}
@@ -378,7 +387,7 @@ public class TaskProcessor extends Handler {
 	private void startAP(Handler handlerAP) {
 		Log.e(LogUtil.LOG_TAG_NEW, "-- ssid: " + mCurrentState.SSID + " -- passkey: " + mCurrentState.passkey);
 		sendEmptyMessage(WifiUtil.AP_CREATE_STARTING);
-		mWifiManagerAdmin.openWifiAp(mCurrentState.SSID, mCurrentState.passkey, mCurrentState.secretType, handlerAP);
+		mWifiApManagerAdmin.openWifiAp(mCurrentState.SSID, mCurrentState.passkey, mCurrentState.secretType, handlerAP);
 	}
 
 	/**
@@ -386,12 +395,12 @@ public class TaskProcessor extends Handler {
 	 */
 	private void stopAP(Handler handlerAP) {
 		sendEmptyMessage(WifiUtil.AP_STOP_STARTING);
-		mWifiManagerAdmin.closeWifiAp(handlerAP);
+		mWifiApManagerAdmin.closeWifiAp(handlerAP);
 	}
 
 	private void startWifiConnect(Handler handlerConnect) {
 		sendEmptyMessage(WifiUtil.CONNECT_STARTING);
-		mWifiManagerAdmin.connectWifi(mCurrentState.SSID, mCurrentState.passkey, handlerConnect);
+		mWifiApManagerAdmin.connectWifi(mCurrentState.SSID, mCurrentState.passkey, mCurrentState.secretType, handlerConnect);
 	}
 
 	/**
@@ -399,7 +408,7 @@ public class TaskProcessor extends Handler {
 	 */
 	private boolean disconnectWifi() {
 		sendEmptyMessage(WifiUtil.DISCONNECT_STARTING);
-		if (mWifiManagerAdmin.disconnectWifi()) {
+		if (mWifiApManagerAdmin.disconnectWifi()) {
 			sendEmptyMessage(WifiUtil.DISCONNECT_OK);
 			return true;
 		} else {
@@ -413,7 +422,7 @@ public class TaskProcessor extends Handler {
 	 */
 	private void startSearchWifi(Handler handlerSearch) {
 		sendEmptyMessage(WifiUtil.SEARCH_STARTING);
-		mWifiManagerAdmin.startSearchWifi(mCurrentState.shareCircleInfo.appInfo, handlerSearch);
+		mWifiApManagerAdmin.startSearchWifi(mCurrentState.shareCircleInfo.appInfo, handlerSearch);
 	}
 
 	/**
@@ -421,7 +430,7 @@ public class TaskProcessor extends Handler {
 	 */
 	private void stopSearchWifi() {
 		sendEmptyMessage(WifiUtil.SEARCH_STOP_STARTING);
-		mWifiManagerAdmin.stopSearchWifi();
+		mWifiApManagerAdmin.stopSearchWifi();
 		sendEmptyMessage(WifiUtil.SEARCH_STOP_OK);
 	}
 
@@ -498,7 +507,7 @@ public class TaskProcessor extends Handler {
 	 */
 	private void startHttpOneFileShare() {
 		// 保存当前状态
-		mWifiManagerAdmin.saveWifiState();
+		mWifiApManagerAdmin.saveWifiState();
 		// 打开分享服务
 		selfShareService = HotspotHttpFileService.getInstance();
 		selfShareService.shareOneFile(mCurrentState.SSID, mCurrentState.resultCallback, mContext,
@@ -510,7 +519,7 @@ public class TaskProcessor extends Handler {
 	 */
 	private void stopHttpOneFileShare() {
 		// 恢复之前状态
-		mWifiManagerAdmin.restoreWifiState(mEmptyOperationResult);
+		mWifiApManagerAdmin.restoreWifiState(mEmptyOperationResult);
 		// 停止分享服务
 		if (selfShareService != null) {
 			selfShareService.stopHttpShare(mCurrentState.resultCallback);
