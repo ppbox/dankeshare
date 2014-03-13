@@ -13,8 +13,10 @@ import java.util.Map;
 import java.util.Set;
 
 import android.os.Handler;
+import android.util.Log;
 
 import com.chainton.dankeshare.OperationResult;
+import com.chainton.dankeshare.util.LogUtil;
 
 /**
  * @author Administrator
@@ -63,7 +65,8 @@ public class HttpFileServer extends NanoHTTPD {
 		
 		String uri = "/" +key;
 		String url = "http://" + localIp + ":" + port + uri;
-		System.out.println("put uri :  "+uri);
+		if(LogUtil.isShowLog)
+			Log.i(LogUtil.LOG_TAG, "put uri :  "+uri);
 		fileServiceMap.put(uri, file);
 		return url;
 	}
@@ -81,19 +84,20 @@ public class HttpFileServer extends NanoHTTPD {
 		
 		String type = "application/octet-stream";
 		String uri = session.getUri();
-		System.out.println("session uri:  "+uri);
-
+		if(LogUtil.isShowLog)
+			Log.i(LogUtil.LOG_TAG, "session uri:  "+uri);
 		if(modelStyle.equalsIgnoreCase("STANDALONE")){
 			
 			//currently standalone only support .apk
 			type ="application/vnd.android.package-archive";
-			
-			System.out.println("STANDALONE Sytle:  ");
+			if(LogUtil.isShowLog)
+				Log.i(LogUtil.LOG_TAG, "STANDALONE Sytle:  ");
 			Set<String> filesKey = fileServiceMap.keySet();
 			if(!filesKey.isEmpty()){
 				Iterator<String> filesIterator =filesKey.iterator();
 				String key = filesIterator.next();
-				System.out.println("STANDALONE download key:  "+key);
+				if(LogUtil.isShowLog)
+					Log.i(LogUtil.LOG_TAG,"STANDALONE download key:  "+key);
 				return serveFile(key, session.getHeaders(),
 						fileServiceMap.get(key), type);
 			}
@@ -240,7 +244,8 @@ public class HttpFileServer extends NanoHTTPD {
 			result.onSucceed();
 			running = true;
 			while(running){
-				System.out.println("http file server ping,  sleep 1000");
+				if(LogUtil.isShowLog)
+					Log.i(LogUtil.LOG_TAG,"http file server ping,  sleep 1000");
 				Thread.sleep(1000);
 			}
 		}catch(Exception e){
@@ -259,7 +264,8 @@ public class HttpFileServer extends NanoHTTPD {
 				super.stop();
 			}
 		}
-		System.out.println("http server stop success!");
+		if(LogUtil.isShowLog)
+			Log.i(LogUtil.LOG_TAG,"http server stop success!");
 	}
 
     /**
@@ -283,11 +289,13 @@ public class HttpFileServer extends NanoHTTPD {
 
 							@Override
 							public void onSucceed() {
-								System.out.println("ssss");
+								if(LogUtil.isShowLog)
+									Log.i(LogUtil.LOG_TAG,"onSucceed");
 							}
 							@Override
 							public void onFailed() {
-								System.out.println("fff");
+								if(LogUtil.isShowLog)
+									Log.i(LogUtil.LOG_TAG,"onFailed");
 							}
 							
 						});

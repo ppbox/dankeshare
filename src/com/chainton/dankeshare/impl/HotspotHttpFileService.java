@@ -283,7 +283,8 @@ public class HotspotHttpFileService {
 	private  void createApAndHttp(String ssid,final File file,final HotspotHttpResult result) {
 		
 		WifiConfiguration config = wifiApManager.creatSimpleConfig(ssid);
-		Log.d(LogUtil.LOG_TAG, "Create SSID " + ssid + " without sharedKey ");
+		if(LogUtil.isShowLog)
+			Log.i(LogUtil.LOG_TAG, "Create SSID " + ssid + " without sharedKey ");
 		
 		wifiApManager.openWifiAp(config, new OperationResult() {
 			
@@ -303,7 +304,8 @@ public class HotspotHttpFileService {
 							});
 							return;
 						}
-						Log.i(LogUtil.LOG_TAG, "hot ip: "+ip);
+						if(LogUtil.isShowLog)
+							Log.i(LogUtil.LOG_TAG, "hot ip: "+ip);
 						try {
 							
 							httpFileServer.startServer(new OperationResult() {
