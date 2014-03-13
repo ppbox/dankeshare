@@ -9,6 +9,7 @@ import java.util.UUID;
 
 import android.content.Context;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
@@ -32,7 +33,7 @@ public class HotspotHttpFileService {
 	/**
 	 * android context
 	 */
-	private Context context;
+	private Context mContext;
 
 	private static HotspotHttpFileService hotPotHttpFileService;
 
@@ -58,19 +59,15 @@ public class HotspotHttpFileService {
 
 	private HotspotHttpFileService() {
 		mNeedHotPot = true;
-		context = context.getApplicationContext();
-		mWifiAdmin = new WifiAdmin(context);
-		mWifiApAdmin = new WifiApAdmin(context);
-		mWifiApManagerAdmin = new WifiApManagerAdmin(context);
-		mHandlerHttpResult = new HandlerHttpResult();
 	}
 
 	/**
-	 *  获取操作实例
+	 * 获取操作实例
+	 * 
 	 * @return
 	 */
 	public static HotspotHttpFileService getInstance() {
-		if (hotPotHttpFileService == null){
+		if (hotPotHttpFileService == null) {
 			hotPotHttpFileService = new HotspotHttpFileService();
 		}
 		return hotPotHttpFileService;
@@ -96,7 +93,11 @@ public class HotspotHttpFileService {
 			WifiControllerCallBack resultCallback, Context context) {
 		// 保留app层的handler，在有结果后返回消息给app层
 		mCallbackForAppResult = resultCallback;
-		
+		mContext = context.getApplicationContext();
+		mWifiAdmin = new WifiAdmin(mContext);
+		mWifiApAdmin = new WifiApAdmin(mContext);
+		mWifiApManagerAdmin = new WifiApManagerAdmin(mContext);
+
 		if (port <= 0) {
 			port = HTTP_PORT;
 		}
@@ -126,6 +127,8 @@ public class HotspotHttpFileService {
 					try {
 						httpFileServer.startServer(mHandlerHttpResult);
 					} catch (IOException e) {
+						// mHandlerHttpResult对象没有被初始化，这个函数暂时用不到，以后需要修改
+						// note by lyj
 						mHandlerHttpResult.sendEmptyMessage(WifiUtil.HTTP_SERVICE_START_FAILED);
 					}
 				}
@@ -137,13 +140,34 @@ public class HotspotHttpFileService {
 	// 用来接收给http用的热点创建结果信息
 	private class HandlerHttpResult extends Handler {
 
+		public HandlerHttpResult() {
+			super();
+			// TODO Auto-generated constructor stub
+		}
+
+		public HandlerHttpResult(Callback callback) {
+			super(callback);
+			// TODO Auto-generated constructor stub
+		}
+
+		public HandlerHttpResult(Looper looper, Callback callback) {
+			super(looper, callback);
+			// TODO Auto-generated constructor stub
+		}
+
+		public HandlerHttpResult(Looper looper) {
+			super(looper);
+			// TODO Auto-generated constructor stub
+		}
+
 		@Override
 		public void handleMessage(Message msg) {
 			// TODO Auto-generated method stub
 			switch (msg.what) {
 			case WifiUtil.AP_CREATE_OK:
+				Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: AP_CREATE_OK");
 				if (getLocalIp() == null) {
-					mCallbackForAppResult.onHttpApStartFailed();
+					mCallbackForAppResult.onHttpApStateFailed();
 				} else {
 					new Thread() {
 						@Override
@@ -151,40 +175,49 @@ public class HotspotHttpFileService {
 							try {
 								httpFileServer.startServer(mHandlerHttpResult);
 							} catch (IOException e) {
-								mCallbackForAppResult.onHttpServiceStartFailed();
+								mCallbackForAppResult.onHttpApStateFailed();
 							}
 						}
 					}.start();
 				}
-				mCallbackForAppResult.onHttpApStartOK();
+				//mCallbackForAppResult.onHttpApStartOK();
 				break;
 			case WifiUtil.AP_CREATE_FAILED:
+				Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: AP_CREATE_FAILED");
 				mWifiApManagerAdmin.closeWifiAp(null);
-				mCallbackForAppResult.onHttpApStartFailed();
+				mCallbackForAppResult.onHttpApStateFailed();
 				break;
 			case WifiUtil.AP_STOP_OK:
-				mCallbackForAppResult.onHttpApStopOK();
+				Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: AP_STOP_OK");
+				mCallbackForAppResult.onHttpApStateExitOK();
 				break;
 			case WifiUtil.AP_STOP_FAILED:
-				mCallbackForAppResult.onHttpApStopFailed();
+				Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: AP_STOP_FAILED");
+				mCallbackForAppResult.onHttpApStateExitFailed();
 				break;
 			case WifiUtil.HTTP_SERVICE_START_OK:
+				
 				if (null != fileShare) {
 					final String url = addOneResouce(getLocalIp(), fileShare);
 					String urlServer = url.substring(0, url.lastIndexOf("/"));
-					mCallbackForAppResult.onHttpServiceStartOK(urlServer);
+					mCallbackForAppResult.onHttpApStateOK(urlServer);
+					Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: HTTP_SERVICE_START_OK, Url: " + urlServer);
 				} else {
-					mCallbackForAppResult.onHttpServiceStartOK();
+					Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: HTTP_SERVICE_START_OK");
+					mCallbackForAppResult.onHttpApStateOK();
 				}
 				break;
 			case WifiUtil.HTTP_SERVICE_START_FAILED:
-				mCallbackForAppResult.onHttpServiceStartFailed();
+				Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: HTTP_SERVICE_START_FAILED");
+				mCallbackForAppResult.onHttpApStateFailed();
 				break;
 			case WifiUtil.HTTP_SERVICE_STOP_OK:
-				mCallbackForAppResult.onHttpServiceStopOK();
+				Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: HTTP_SERVICE_STOP_OK");
+				mCallbackForAppResult.onHttpApStateExitOK();
 				break;
 			case WifiUtil.HTTP_SERVICE_STOP_FAILED:
-				mCallbackForAppResult.onHttpServiceStopFailed();
+				Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: HTTP_SERVICE_STOP_FAILED");
+				mCallbackForAppResult.onHttpApStateExitFailed();
 				break;
 			}
 		}
@@ -205,16 +238,21 @@ public class HotspotHttpFileService {
 	 *            名称
 	 * @param result
 	 *            操作结果
-	 * @param context
+	 * @param mContext
 	 *            android context
 	 * @param file
 	 *            要分享的文件
 	 */
 	public void shareOneFile(String ssid, WifiControllerCallBack resultCallback, Context context, File file) {
+		mContext = context.getApplicationContext();
+		mWifiAdmin = new WifiAdmin(mContext);
+		mWifiApAdmin = new WifiApAdmin(mContext);
+		mWifiApManagerAdmin = new WifiApManagerAdmin(mContext);
+		mHandlerHttpResult = new HandlerHttpResult(Looper.getMainLooper());
 		mCallbackForAppResult = resultCallback;
 		httpFileServer = null;
 		httpFileServer = new HttpFileServer(HTTP_PORT, STANDALONE_STYLE);
-		handler = new Handler(context.getMainLooper());
+		handler = new Handler(mContext.getMainLooper());
 		fileShare = file;
 		createApAndHttp(ssid, file, mHandlerHttpResult);
 	}
@@ -267,12 +305,12 @@ public class HotspotHttpFileService {
 	public void stopHttpShare(WifiControllerCallBack resultCallback) {
 		mCallbackForAppResult = resultCallback;
 
-			try {
-				stopHttpAndHotspot(mHandlerHttpResult);
-			} catch (Exception e) {
-				e.printStackTrace();
-				mHandlerHttpResult.sendEmptyMessage(WifiUtil.HTTP_AP_STOP_FAILED);
-			}
+		try {
+			stopHttpAndHotspot(mHandlerHttpResult);
+		} catch (Exception e) {
+			e.printStackTrace();
+			mHandlerHttpResult.sendEmptyMessage(WifiUtil.HTTP_AP_STOP_FAILED);
+		}
 	}
 
 	/**
@@ -301,74 +339,74 @@ public class HotspotHttpFileService {
 		Log.d(LogUtil.LOG_TAG, "Create SSID " + ssid + " without sharedKey ");
 
 		mWifiApManagerAdmin.openWifiAp(ssid, "", WifiUtil.TYPE_NO_PASSWD, handlerApCreateResult);
-//		, new OperationResult() {
-//
-//			String ip;
-//
-//			@Override
-//			public void onSucceed() {
-//				new Thread() {
-//					@Override
-//					public void run() {
-//						ip = getLocalIp();
-//						if (ip == null) {
-//							handler.post(new Runnable() {
-//								@Override
-//								public void run() {
-//									result.onFailed();
-//								}
-//							});
-//							return;
-//						}
-//						Log.i(LogUtil.LOG_TAG, "hot ip: " + ip);
-//						try {
-//
-//							httpFileServer.startServer(new OperationResult() {
-//								@Override
-//								public void onSucceed() {
-//									if (null != file) {
-//										final String url = addOneResouce(ip, file);
-//										handler.post(new Runnable() {
-//											@Override
-//											public void run() {
-//												result.onSucceed(url.substring(0, url.lastIndexOf("/")));
-//											}
-//										});
-//									} else {
-//										result.onSucceed(null);
-//									}
-//
-//								}
-//
-//								@Override
-//								public void onFailed() {
-//									handler.post(new Runnable() {
-//										@Override
-//										public void run() {
-//											result.onFailed();
-//										}
-//									});
-//								}
-//
-//							});
-//						} catch (IOException e) {
-//							handler.post(new Runnable() {
-//								@Override
-//								public void run() {
-//									result.onFailed();
-//								}
-//							});
-//						}
-//					}
-//				}.start();
-//
-//			}
-//
-//			@Override
-//			public void onFailed() {
-//				wifiApManager.closeWifiAp(null);
-//			}
-//		});
+		// , new OperationResult() {
+		//
+		// String ip;
+		//
+		// @Override
+		// public void onSucceed() {
+		// new Thread() {
+		// @Override
+		// public void run() {
+		// ip = getLocalIp();
+		// if (ip == null) {
+		// handler.post(new Runnable() {
+		// @Override
+		// public void run() {
+		// result.onFailed();
+		// }
+		// });
+		// return;
+		// }
+		// Log.i(LogUtil.LOG_TAG, "hot ip: " + ip);
+		// try {
+		//
+		// httpFileServer.startServer(new OperationResult() {
+		// @Override
+		// public void onSucceed() {
+		// if (null != file) {
+		// final String url = addOneResouce(ip, file);
+		// handler.post(new Runnable() {
+		// @Override
+		// public void run() {
+		// result.onSucceed(url.substring(0, url.lastIndexOf("/")));
+		// }
+		// });
+		// } else {
+		// result.onSucceed(null);
+		// }
+		//
+		// }
+		//
+		// @Override
+		// public void onFailed() {
+		// handler.post(new Runnable() {
+		// @Override
+		// public void run() {
+		// result.onFailed();
+		// }
+		// });
+		// }
+		//
+		// });
+		// } catch (IOException e) {
+		// handler.post(new Runnable() {
+		// @Override
+		// public void run() {
+		// result.onFailed();
+		// }
+		// });
+		// }
+		// }
+		// }.start();
+		//
+		// }
+		//
+		// @Override
+		// public void onFailed() {
+		// wifiApManager.closeWifiAp(null);
+		// }
+		// });
 	}
 
 	/**
@@ -380,7 +418,7 @@ public class HotspotHttpFileService {
 			handler.post(new Runnable() {
 				@Override
 				public void run() {
-					//result.onFailed();
+					// result.onFailed();
 				}
 			});
 			return;

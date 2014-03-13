@@ -186,7 +186,7 @@ public final class WifiApController {
 	 * @param context
 	 *            UI上下文
 	 */
-	public void setConnectClientState(ShareCircleInfo circleInfo, ClientInfo selfInfo, WifiControllerCallBack createClientResultCallback,
+	public void setApClientState(ShareCircleInfo circleInfo, ClientInfo selfInfo, WifiControllerCallBack createClientResultCallback,
 			ShareCircleClient client, Context context) {	
 		TargetStatusInfo targetStatusInfo = new TargetStatusInfo();
 		WifiApShareCircleInfo waci = (WifiApShareCircleInfo)circleInfo;
@@ -222,7 +222,7 @@ public final class WifiApController {
 	 * @param autoStop
 	 *            WIFI未打开时是否自动停止搜索
 	 */
-	public void setSearchShareCircleState(ShareCircleAppInfo appInfo, ShareCircleType scType,
+	public void setSearchShareState(ShareCircleAppInfo appInfo, ShareCircleType scType,
 			WifiControllerCallBack searchResultCallback, Context context, boolean autoStop) {
 		TargetStatusInfo targetStatusInfo = new TargetStatusInfo();
 		

@@ -300,8 +300,8 @@ public class TaskProcessor extends Handler {
 	public synchronized boolean setTargetWifiStatus(TargetStatusInfo targetStatusInfo) {
 		Log.w(LogUtil.LOG_TAG_NEW,
 				" TaskProcessor:  begin to set target wifi status. info: " + targetStatusInfo.toString());
-		Log.e(LogUtil.LOG_TAG_NEW,
-				" TaskProcessor:  begin to set target wifi status. task type: " + targetStatusInfo.statusTaskType);		// 如果设置的信息不完整，则直接返回信息不完整的错误消息
+		Log.e(LogUtil.LOG_TAG_NEW, " TaskProcessor:  begin to set target wifi status. task type: "
+				+ targetStatusInfo.statusTaskType); // 如果设置的信息不完整，则直接返回信息不完整的错误消息
 		// 如果完整，则将该任务放入
 		if (!checkTargetStatusInfo(targetStatusInfo)) {
 			return false;
@@ -311,18 +311,23 @@ public class TaskProcessor extends Handler {
 				mCurrentState = targetStatusInfo;
 				mCurrentState.taskStatus = TaskProcessor.STATUS_TASK_WAITING;
 				Log.w(LogUtil.LOG_TAG_NEW, " TaskProcessor: set current state.  " + mCurrentState.toString());
-				Log.e(LogUtil.LOG_TAG_NEW, " TaskProcessor: set current state task type:  " + mCurrentState.statusTaskType);
+				Log.e(LogUtil.LOG_TAG_NEW, " TaskProcessor: set current state task type:  "
+						+ mCurrentState.statusTaskType);
 			} else {
 				// 如果发现当前状态已经是需要设置的状态，则直接返回
 				if ((mCurrentState.statusTaskType == targetStatusInfo.statusTaskType)
 						&& ((mCurrentState.taskStatus == STATUS_TASK_WAITING)
 								|| (mCurrentState.taskStatus == STATUS_TASK_STARTING) || (mCurrentState.taskStatus == STATUS_TASK_OK))) {
-					Log.e(LogUtil.LOG_TAG_NEW, " TaskProcessor: current state is already ok. target task type: " + targetStatusInfo.statusTaskType);
+					// 去掉下一步需要做的任务
+					mNextState = null;
+					Log.e(LogUtil.LOG_TAG_NEW, " TaskProcessor: current state is already ok. target task type: "
+							+ targetStatusInfo.statusTaskType);
 					return true;
 				} else {
-					Log.e(LogUtil.LOG_TAG_NEW, " TaskProcessor: set next state task type:  " + mCurrentState.statusTaskType);
 					mNextState = targetStatusInfo;
 					mNextState.taskStatus = TaskProcessor.STATUS_TASK_WAITING;
+					Log.e(LogUtil.LOG_TAG_NEW, " TaskProcessor: set next state task type:  "
+							+ mNextState.statusTaskType);
 				}
 			}
 		}
@@ -387,6 +392,7 @@ public class TaskProcessor extends Handler {
 	private void startAP(Handler handlerAP) {
 		Log.e(LogUtil.LOG_TAG_NEW, "-- ssid: " + mCurrentState.SSID + " -- passkey: " + mCurrentState.passkey);
 		sendEmptyMessage(WifiUtil.AP_CREATE_STARTING);
+		mWifiApManagerAdmin.saveWifiState();
 		mWifiApManagerAdmin.openWifiAp(mCurrentState.SSID, mCurrentState.passkey, mCurrentState.secretType, handlerAP);
 	}
 
@@ -400,23 +406,56 @@ public class TaskProcessor extends Handler {
 
 	private void startWifiConnect(Handler handlerConnect) {
 		sendEmptyMessage(WifiUtil.CONNECT_STARTING);
-		mWifiApManagerAdmin.connectWifi(mCurrentState.SSID, mCurrentState.passkey, mCurrentState.secretType, handlerConnect);
+		mWifiApManagerAdmin.connectWifi(mCurrentState.SSID, mCurrentState.passkey, mCurrentState.secretType,
+				handlerConnect);
 	}
 
 	/**
 	 * client断开连接热点
+	 * msg.arg1 用来定义断开wifi的不同情况
+	 * 			DISCONNECT_BY_USER表示用户自己断开；
+	 * 			DISCONNECT_BY_SERVER表示被服务器端断开；
+	 * 			DISCONNECT_BY_EXCEPTION表示异常情况断开
 	 */
 	private boolean disconnectWifi() {
 		sendEmptyMessage(WifiUtil.DISCONNECT_STARTING);
+		Message msg = new Message();
+		msg.arg1 = WifiUtil.DISCONNECT_BY_USER;
+		
 		if (mWifiApManagerAdmin.disconnectWifi()) {
-			sendEmptyMessage(WifiUtil.DISCONNECT_OK);
+			msg.what = WifiUtil.DISCONNECT_OK;
+			sendMessage(msg);
 			return true;
 		} else {
-			sendEmptyMessage(WifiUtil.DISCONNECT_FAILED);
+			msg.what = WifiUtil.DISCONNECT_FAILED;
+			sendMessage(msg);
 			return false;
 		}
 	}
-
+	
+	/**
+	 * client断开连接热点
+	 * msg.arg1 用来定义断开wifi的不同情况
+	 * 			DISCONNECT_BY_USER表示用户自己断开；
+	 * 			DISCONNECT_BY_SERVER表示被服务器端断开；
+	 * 			DISCONNECT_BY_EXCEPTION表示异常情况断开
+	 */
+	private boolean disconnectWifi(int disconnectInfo) {
+		sendEmptyMessage(WifiUtil.DISCONNECT_STARTING);
+		Message msg = new Message();
+		msg.arg1 = disconnectInfo;
+		
+		if (mWifiApManagerAdmin.disconnectWifi()) {
+			msg.what = WifiUtil.DISCONNECT_OK;
+			sendMessage(msg);
+			return true;
+		} else {
+			msg.what = WifiUtil.DISCONNECT_FAILED;
+			sendMessage(msg);
+			return false;
+		}
+	}
+	
 	/**
 	 * client开始搜索热点
 	 */
@@ -483,8 +522,8 @@ public class TaskProcessor extends Handler {
 	private void disconnectServerService() {
 		// 开始断开服务层连接
 		sendEmptyMessage(WifiUtil.DISCONNECT_SERVICE_STARTING);
-		mCurrentState.shareCircleClient.disconnect(false);
-		sendEmptyMessage(WifiUtil.DISCONNECT_SERVICE_OK);
+		mCurrentState.shareCircleClient.disconnect(true);
+		//sendEmptyMessage(WifiUtil.DISCONNECT_SERVICE_OK);
 	}
 
 	private OperationResult mEmptyOperationResult = new OperationResult() {
@@ -502,6 +541,7 @@ public class TaskProcessor extends Handler {
 		}
 	};
 	private HotspotHttpFileService selfShareService;
+
 	/**
 	 * 启动ap及http服务进行文件分享
 	 */
@@ -529,11 +569,14 @@ public class TaskProcessor extends Handler {
 	@Override
 	public void handleMessage(Message msg) {
 		switch (msg.what) {
+		/**
+		 * 服务端回调处理
+		 */
 		// ap创建消息处理
 		case WifiUtil.AP_CREATE_STARTING:
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: AP_CREATE_STARTING");
-			mTaskProcessorDetailStatus = WifiUtil.AP_CREATE_STARTING;
 			// 开始启动热点
+			mTaskProcessorDetailStatus = WifiUtil.AP_CREATE_STARTING;
 			break;
 		case WifiUtil.AP_CREATE_OK:
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: AP_CREATE_OK");
@@ -546,7 +589,7 @@ public class TaskProcessor extends Handler {
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: AP_CREATE_FAILED");
 			mTaskProcessorDetailStatus = WifiUtil.AP_CREATE_FAILED;
 			mCurrentState.taskStatus = STATUS_TASK_STOP;
-			mCurrentState.resultCallback.onApCreateFailed();
+			mCurrentState.resultCallback.onApServerStateFailed();
 			break;
 
 		// ap服务打开消息处理
@@ -558,14 +601,14 @@ public class TaskProcessor extends Handler {
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: AP_SERVICE_CREATE_OK");
 			mTaskProcessorDetailStatus = WifiUtil.AP_SERVICE_CREATE_OK;
 			mCurrentState.taskStatus = STATUS_TASK_OK;
-			mCurrentState.resultCallback.onApServiceCreateOK((ShareCircleInfo) msg.obj);
+			mCurrentState.resultCallback.onApServerStateOK((ShareCircleInfo) msg.obj);
 			break;
 		case WifiUtil.AP_SERVICE_CREATE_FAILED:
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: AP_SERVICE_CREATE_FAILED");
 			mTaskProcessorDetailStatus = WifiUtil.AP_SERVICE_CREATE_FAILED;
 			stopAP(selfHandler);
 			mCurrentState.taskStatus = STATUS_TASK_STOP;
-			mCurrentState.resultCallback.onApServiceCreateFailed();
+			mCurrentState.resultCallback.onApServerStateFailed();
 			break;
 
 		// ap服务停止消息处理
@@ -577,7 +620,7 @@ public class TaskProcessor extends Handler {
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: AP_SERVICE_STOP_FAILED");
 			mTaskProcessorDetailStatus = WifiUtil.AP_SERVICE_STOP_FAILED;
 			mCurrentState.taskStatus = STATUS_TASK_STOP;
-			mCurrentState.resultCallback.onApServiceStopFailed();
+			mCurrentState.resultCallback.onApServerStateExitFailed();
 			break;
 		case WifiUtil.AP_SERVICE_STOP_OK:
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: AP_SERVICE_STOP_OK");
@@ -594,15 +637,57 @@ public class TaskProcessor extends Handler {
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: AP_STOP_OK");
 			mTaskProcessorDetailStatus = WifiUtil.AP_STOP_OK;
 			mCurrentState.taskStatus = STATUS_TASK_STOP;
-			mCurrentState.resultCallback.onApStopOK();
+			mWifiApManagerAdmin.restoreWifiState(new OperationResult(){
+				@Override
+				public void onSucceed() {
+					// TODO Auto-generated method stub
+					mCurrentState.resultCallback.onApServerStateExitOK();
+				}
+
+				@Override
+				public void onFailed() {
+					// TODO Auto-generated method stub
+					mCurrentState.resultCallback.onApServerStateExitOK();
+				}
+				
+			});
+			break;
+		case WifiUtil.AP_STOP_ABNORMAL:
+			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: AP_STOP_ABNORMAL");
+			mTaskProcessorDetailStatus = WifiUtil.AP_STOP_ABNORMAL;
+			mCurrentState.taskStatus = STATUS_TASK_STOP;
+			mWifiApManagerAdmin.restoreWifiState(new OperationResult(){
+				@Override
+				public void onSucceed() {
+					// TODO Auto-generated method stub
+					mCurrentState.resultCallback.onApServerStateExitAbnormal();
+				}
+
+				@Override
+				public void onFailed() {
+					// TODO Auto-generated method stub
+					mCurrentState.resultCallback.onApServerStateExitAbnormal();
+				}
+				
+			});
 			break;
 		case WifiUtil.AP_STOP_FAILED:
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: AP_STOP_FAILED");
 			mTaskProcessorDetailStatus = WifiUtil.AP_STOP_FAILED;
 			mCurrentState.taskStatus = STATUS_TASK_STOP;
-			mCurrentState.resultCallback.onApStopFailed();
+			mCurrentState.resultCallback.onApServerStateExitFailed();
+			break;
+		// 客户端主动退出时候，服务端收到的回调
+		case WifiUtil.CLIENT_EXIT:
+			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: DISCONNECT_BY_CLIENT");
+			//mTaskProcessorDetailStatus = WifiUtil.DISCONNECT_BY_CLIENT;
+			//mCurrentState.taskStatus = STATUS_TASK_STOP;
+			mCurrentState.resultCallback.onClientExit((ClientInfo) msg.obj);
 			break;
 
+		/**
+		 * 客户端回调处理
+		 */
 		// 连接wifi ap消息处理
 		case WifiUtil.CONNECT_STARTING:
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: CONNECT_STARTING");
@@ -617,7 +702,7 @@ public class TaskProcessor extends Handler {
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: CONNECT_FAILED");
 			mTaskProcessorDetailStatus = WifiUtil.CONNECT_FAILED;
 			mCurrentState.taskStatus = STATUS_TASK_STOP;
-			mCurrentState.resultCallback.onConnectFailed();
+			mCurrentState.resultCallback.onApClientStateFailed();
 			break;
 
 		// 连接服务消息处理
@@ -629,13 +714,13 @@ public class TaskProcessor extends Handler {
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: CONNECT_SERVICE_OK");
 			mTaskProcessorDetailStatus = WifiUtil.CONNECT_SERVICE_OK;
 			mCurrentState.taskStatus = STATUS_TASK_OK;
-			mCurrentState.resultCallback.onConnectServiceOK();
+			mCurrentState.resultCallback.onApClientStateOK();
 			break;
 		case WifiUtil.CONNECT_SERVICE_FAILED:
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: CONNECT_SERVICE_FAILED");
 			mTaskProcessorDetailStatus = WifiUtil.CONNECT_SERVICE_FAILED;
 			mCurrentState.taskStatus = STATUS_TASK_STOP;
-			mCurrentState.resultCallback.onConnectServiceFailed();
+			mCurrentState.resultCallback.onApClientStateFailed();
 			break;
 
 		// 断开连接服务层消息处理
@@ -643,10 +728,11 @@ public class TaskProcessor extends Handler {
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: DISCONNECT_SERVICE_STARTING");
 			mTaskProcessorDetailStatus = WifiUtil.DISCONNECT_SERVICE_STARTING;
 			break;
+		// 可能废弃，用DISCONNECT_BY_USER代替
 		case WifiUtil.DISCONNECT_SERVICE_OK:
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: DISCONNECT_SERVICE_OK");
 			mTaskProcessorDetailStatus = WifiUtil.DISCONNECT_SERVICE_OK;
-			mCurrentState.resultCallback.onDisconnectServiceOK();
+			// mCurrentState.resultCallback.onApClientStateDisableOK();
 			// 服务断开成功后，开始断开wifi连接
 			disconnectWifi();
 			break;
@@ -654,7 +740,7 @@ public class TaskProcessor extends Handler {
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: DISCONNECT_SERVICE_FAILED");
 			mTaskProcessorDetailStatus = WifiUtil.DISCONNECT_SERVICE_FAILED;
 			mCurrentState.taskStatus = STATUS_TASK_STOP;
-			mCurrentState.resultCallback.onDisconnectServiceFailed();
+			mCurrentState.resultCallback.onApClientStateExitFailed();
 			break;
 
 		// 断开wifi连接消息处理
@@ -666,13 +752,13 @@ public class TaskProcessor extends Handler {
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: DISCONNECT_OK");
 			mTaskProcessorDetailStatus = WifiUtil.DISCONNECT_OK;
 			mCurrentState.taskStatus = STATUS_TASK_STOP;
-			mCurrentState.resultCallback.onDisconnectOK();
+			mCurrentState.resultCallback.onApClientStateExitOK(msg.arg1);
 			break;
 		case WifiUtil.DISCONNECT_FAILED:
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: DISCONNECT_FAILED");
 			mTaskProcessorDetailStatus = WifiUtil.DISCONNECT_FAILED;
 			mCurrentState.taskStatus = STATUS_TASK_STOP;
-			mCurrentState.resultCallback.onDisconnectFailed();
+			mCurrentState.resultCallback.onApClientStateExitFailed();
 			break;
 
 		// 启动search服务消息处理
@@ -684,7 +770,7 @@ public class TaskProcessor extends Handler {
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: SEARCH_OK");
 			mTaskProcessorDetailStatus = WifiUtil.SEARCH_OK;
 			mCurrentState.taskStatus = STATUS_TASK_OK;
-			mCurrentState.resultCallback.onSearchOK();
+			mCurrentState.resultCallback.onSearchShareStateOK();
 			// mCurrentState.resultHandler.sendMessage(msg);
 			break;
 		case WifiUtil.SEARCH_NEW_SCAN_RESULT:
@@ -697,7 +783,7 @@ public class TaskProcessor extends Handler {
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: SEARCH_FAILED");
 			mTaskProcessorDetailStatus = WifiUtil.SEARCH_FAILED;
 			mCurrentState.taskStatus = STATUS_TASK_STOP;
-			mCurrentState.resultCallback.onSearchFailed();
+			mCurrentState.resultCallback.onSearchShareStateFailed();
 			break;
 
 		// 停止搜索服务消息处理
@@ -709,13 +795,38 @@ public class TaskProcessor extends Handler {
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: SEARCH_STOP_OK");
 			mTaskProcessorDetailStatus = WifiUtil.SEARCH_STOP_OK;
 			mCurrentState.taskStatus = STATUS_TASK_STOP;
-			mCurrentState.resultCallback.onSearchStopOK();
+			mCurrentState.resultCallback.onSearchShareStateExitOK();
 			break;
 		case WifiUtil.SEARCH_STOP_FAILED:
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: SEARCH_STOP_FAILED");
 			mTaskProcessorDetailStatus = WifiUtil.SEARCH_STOP_FAILED;
 			mCurrentState.taskStatus = STATUS_TASK_STOP;
-			mCurrentState.resultCallback.onSearchStopFailed();
+			mCurrentState.resultCallback.onSearchShareStateExitFailed();
+			break;
+		// 客户端被断开连接的回调处理
+		case WifiUtil.DISCONNECT_BY_USER:
+			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: DISCONNECT_BY_LOCAL");
+			mTaskProcessorDetailStatus = WifiUtil.DISCONNECT_BY_USER;
+//			mCurrentState.taskStatus = STATUS_TASK_STOP;
+//			mCurrentState.resultCallback.onSearchShareStateExitFailed();
+			// 服务断开成功后，开始断开wifi连接
+			disconnectWifi(WifiUtil.DISCONNECT_BY_USER);
+			break;
+		case WifiUtil.DISCONNECT_BY_SERVER:
+			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: DISCONNECT_BY_SERVER");
+			mTaskProcessorDetailStatus = WifiUtil.DISCONNECT_BY_SERVER;
+//			mCurrentState.taskStatus = STATUS_TASK_STOP;
+//			mCurrentState.resultCallback.onSearchShareStateExitFailed();
+			// 服务断开成功后，开始断开wifi连接
+			disconnectWifi(WifiUtil.DISCONNECT_BY_SERVER);
+			break;
+		case WifiUtil.DISCONNECT_BY_EXCEPTION:
+			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: DISCONNECT_BY_EXCEPTION");
+			mTaskProcessorDetailStatus = WifiUtil.DISCONNECT_BY_EXCEPTION;
+//			mCurrentState.taskStatus = STATUS_TASK_STOP;
+//			mCurrentState.resultCallback.onSearchShareStateExitFailed();
+			// 服务断开成功后，开始断开wifi连接
+			disconnectWifi(WifiUtil.DISCONNECT_BY_EXCEPTION);
 			break;
 		}
 	}

@@ -1,7 +1,5 @@
 package com.chainton.dankeshare.receiver;
 
-import com.chainton.dankeshare.WifiDirectManager;
-
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -9,6 +7,8 @@ import android.net.NetworkInfo;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
+
+import com.chainton.dankeshare.WifiDirectManager;
 
 /**
  * 广播接收者，接收和处理  Wifi Direct 过程中发送的各种系统广播
