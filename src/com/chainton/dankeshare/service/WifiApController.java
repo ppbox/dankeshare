@@ -154,6 +154,7 @@ public final class WifiApController {
 		
 		wifiApShareCircleInfo.ssid = WifiSSIDNameCodec.encodeWifiApName(shareCircleName, appInfo);
 		wifiApShareCircleInfo.shareKey = WifiSSIDNameCodec.generateSharedKey(shareCircleName, appInfo);
+		wifiApShareCircleInfo.maxClients = maxClients;
 		Log.d(LogUtil.LOG_TAG, "Create SSID " + wifiApShareCircleInfo.ssid + " with sharedKey "
 				+ wifiApShareCircleInfo.shareKey);
 		Log.e(LogUtil.LOG_TAG_NEW, " TaskProcessorStatus : " + mTaskProcessor.getTaskProcessorStatus());

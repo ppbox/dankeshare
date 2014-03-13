@@ -714,6 +714,7 @@ public class TaskProcessor extends Handler {
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: CONNECT_SERVICE_OK");
 			mTaskProcessorDetailStatus = WifiUtil.CONNECT_SERVICE_OK;
 			mCurrentState.taskStatus = STATUS_TASK_OK;
+			mCurrentState.shareCircleClient.requestEnter();
 			mCurrentState.resultCallback.onApClientStateOK();
 			break;
 		case WifiUtil.CONNECT_SERVICE_FAILED:
