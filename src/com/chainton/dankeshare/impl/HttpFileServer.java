@@ -17,6 +17,7 @@ import android.util.Log;
 
 import com.chainton.dankeshare.OperationResult;
 import com.chainton.dankeshare.util.LogUtil;
+import com.chainton.forest.core.util.GlobalUtil;
 
 /**
  * @author Administrator
@@ -65,7 +66,7 @@ public class HttpFileServer extends NanoHTTPD {
 		
 		String uri = "/" +key;
 		String url = "http://" + localIp + ":" + port + uri;
-		if(LogUtil.isShowLog)
+		if(GlobalUtil.SHOW_SYSTEM_OUT)
 			Log.i(LogUtil.LOG_TAG, "put uri :  "+uri);
 		fileServiceMap.put(uri, file);
 		return url;
@@ -84,19 +85,19 @@ public class HttpFileServer extends NanoHTTPD {
 		
 		String type = "application/octet-stream";
 		String uri = session.getUri();
-		if(LogUtil.isShowLog)
+		if(GlobalUtil.SHOW_SYSTEM_OUT)
 			Log.i(LogUtil.LOG_TAG, "session uri:  "+uri);
 		if(modelStyle.equalsIgnoreCase("STANDALONE")){
 			
 			//currently standalone only support .apk
 			type ="application/vnd.android.package-archive";
-			if(LogUtil.isShowLog)
+			if(GlobalUtil.SHOW_SYSTEM_OUT)
 				Log.i(LogUtil.LOG_TAG, "STANDALONE Sytle:  ");
 			Set<String> filesKey = fileServiceMap.keySet();
 			if(!filesKey.isEmpty()){
 				Iterator<String> filesIterator =filesKey.iterator();
 				String key = filesIterator.next();
-				if(LogUtil.isShowLog)
+				if(GlobalUtil.SHOW_SYSTEM_OUT)
 					Log.i(LogUtil.LOG_TAG,"STANDALONE download key:  "+key);
 				return serveFile(key, session.getHeaders(),
 						fileServiceMap.get(key), type);
@@ -244,7 +245,7 @@ public class HttpFileServer extends NanoHTTPD {
 			result.onSucceed();
 			running = true;
 			while(running){
-				if(LogUtil.isShowLog)
+				if(GlobalUtil.SHOW_SYSTEM_OUT)
 					Log.i(LogUtil.LOG_TAG,"http file server ping,  sleep 1000");
 				Thread.sleep(1000);
 			}
@@ -264,7 +265,7 @@ public class HttpFileServer extends NanoHTTPD {
 				super.stop();
 			}
 		}
-		if(LogUtil.isShowLog)
+		if(GlobalUtil.SHOW_SYSTEM_OUT)
 			Log.i(LogUtil.LOG_TAG,"http server stop success!");
 	}
 
@@ -289,12 +290,12 @@ public class HttpFileServer extends NanoHTTPD {
 
 							@Override
 							public void onSucceed() {
-								if(LogUtil.isShowLog)
+								if(GlobalUtil.SHOW_SYSTEM_OUT)
 									Log.i(LogUtil.LOG_TAG,"onSucceed");
 							}
 							@Override
 							public void onFailed() {
-								if(LogUtil.isShowLog)
+								if(GlobalUtil.SHOW_SYSTEM_OUT)
 									Log.i(LogUtil.LOG_TAG,"onFailed");
 							}
 							
