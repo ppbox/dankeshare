@@ -13,11 +13,8 @@ import java.util.Map;
 import java.util.Set;
 
 import android.os.Handler;
-import android.util.Log;
 
-import com.chainton.dankeshare.OperationResult;
-import com.chainton.dankeshare.util.LogUtil;
-import com.chainton.forest.core.util.GlobalUtil;
+import com.chainton.dankeshare.wifi.util.WifiUtil;
 
 /**
  * @author Administrator
@@ -25,8 +22,7 @@ import com.chainton.forest.core.util.GlobalUtil;
  */
 public class HttpFileServer extends NanoHTTPD {
 
-	
-	private static  Map<String, File> fileServiceMap;
+	private static Map<String, File> fileServiceMap;
 	private boolean running = true;
 	private int port;
 
@@ -36,15 +32,13 @@ public class HttpFileServer extends NanoHTTPD {
 	 */
 	protected Handler handler;
 
-	public HttpFileServer(int port,String modelStyle) {
+	public HttpFileServer(int port, String modelStyle) {
 		super(port);
-		this.port =port;
+		this.port = port;
 		this.modelStyle = modelStyle;
 		fileServiceMap = new HashMap<String, File>();
 	}
-	
 
-	
 	/**
 	 * 将一个文件映射到http服务上
 	 * 
@@ -57,56 +51,49 @@ public class HttpFileServer extends NanoHTTPD {
 	 * @return 映射的url
 	 */
 	public String addFile(String localIp, String md5, File file) {
-		
+
 		String fileName = file.getName();
 		int i = fileName.lastIndexOf('.');
 		String extName = fileName.substring(i);
-		
-		String key = md5+extName;
-		
-		String uri = "/" +key;
+
+		String key = md5 + extName;
+
+		String uri = "/" + key;
 		String url = "http://" + localIp + ":" + port + uri;
-		if(GlobalUtil.SHOW_SYSTEM_OUT)
-			Log.i(LogUtil.LOG_TAG, "put uri :  "+uri);
+		System.out.println("put uri :  " + uri);
 		fileServiceMap.put(uri, file);
 		return url;
 	}
 
-
-
-	private static final Response NOT_FOUND_RESPONSE = new Response(
-			Response.Status.NOT_FOUND, "text/html", "not found");
+	private static final Response NOT_FOUND_RESPONSE = new Response(Response.Status.NOT_FOUND, "text/html", "not found");
 
 	/**
 	 * 对请求的url 返回 流或普通字符串
 	 */
 	@Override
 	public Response serve(IHTTPSession session) {
-		
+
 		String type = "application/octet-stream";
 		String uri = session.getUri();
-		if(GlobalUtil.SHOW_SYSTEM_OUT)
-			Log.i(LogUtil.LOG_TAG, "session uri:  "+uri);
-		if(modelStyle.equalsIgnoreCase("STANDALONE")){
-			
-			//currently standalone only support .apk
-			type ="application/vnd.android.package-archive";
-			if(GlobalUtil.SHOW_SYSTEM_OUT)
-				Log.i(LogUtil.LOG_TAG, "STANDALONE Sytle:  ");
+		System.out.println("session uri:  " + uri);
+
+		if (modelStyle.equalsIgnoreCase("STANDALONE")) {
+
+			// currently standalone only support .apk
+			type = "application/vnd.android.package-archive";
+
+			System.out.println("STANDALONE Sytle:  ");
 			Set<String> filesKey = fileServiceMap.keySet();
-			if(!filesKey.isEmpty()){
-				Iterator<String> filesIterator =filesKey.iterator();
+			if (!filesKey.isEmpty()) {
+				Iterator<String> filesIterator = filesKey.iterator();
 				String key = filesIterator.next();
-				if(GlobalUtil.SHOW_SYSTEM_OUT)
-					Log.i(LogUtil.LOG_TAG,"STANDALONE download key:  "+key);
-				return serveFile(key, session.getHeaders(),
-						fileServiceMap.get(key), type);
+				System.out.println("STANDALONE download key:  " + key);
+				return serveFile(key, session.getHeaders(), fileServiceMap.get(key), type);
 			}
-		}else{
+		} else {
 			if (fileServiceMap.containsKey(uri)) {
-				return serveFile(uri, session.getHeaders(),
-						fileServiceMap.get(uri), type);
-			} 
+				return serveFile(uri, session.getHeaders(), fileServiceMap.get(uri), type);
+			}
 		}
 
 		return NOT_FOUND_RESPONSE;
@@ -114,19 +101,23 @@ public class HttpFileServer extends NanoHTTPD {
 
 	/**
 	 * 对请求的url 返回 流或普通字符串
-	 * @param uri  文件url
-	 * @param header 请求头
-	 * @param file 文件
-	 * @param mime 文件类型
+	 * 
+	 * @param uri
+	 *            文件url
+	 * @param header
+	 *            请求头
+	 * @param file
+	 *            文件
+	 * @param mime
+	 *            文件类型
 	 * @return
 	 */
-	private Response serveFile(String uri, Map<String, String> header, File file,
-			String mime) {
+	private Response serveFile(String uri, Map<String, String> header, File file, String mime) {
 		Response res;
 		try {
 			// Calculate etag
-			String etag = Integer.toHexString((file.getAbsolutePath()
-					+ file.lastModified() + "" + file.length()).hashCode());
+			String etag = Integer.toHexString((file.getAbsolutePath() + file.lastModified() + "" + file.length())
+					.hashCode());
 
 			// Support (simple) skipping:
 			long startFrom = 0;
@@ -138,8 +129,7 @@ public class HttpFileServer extends NanoHTTPD {
 					int minus = range.indexOf('-');
 					try {
 						if (minus > 0) {
-							startFrom = Long.parseLong(range
-									.substring(0, minus));
+							startFrom = Long.parseLong(range.substring(0, minus));
 							endAt = Long.parseLong(range.substring(minus + 1));
 						}
 					} catch (NumberFormatException ignored) {
@@ -152,8 +142,7 @@ public class HttpFileServer extends NanoHTTPD {
 			long fileLen = file.length();
 			if (range != null && startFrom >= 0) {
 				if (startFrom >= fileLen) {
-					res = createResponse(Response.Status.RANGE_NOT_SATISFIABLE,
-							NanoHTTPD.MIME_PLAINTEXT, "");
+					res = createResponse(Response.Status.RANGE_NOT_SATISFIABLE, NanoHTTPD.MIME_PLAINTEXT, "");
 					res.addHeader("Content-Range", "bytes 0-0/" + fileLen);
 					res.addHeader("ETag", etag);
 				} else {
@@ -174,26 +163,22 @@ public class HttpFileServer extends NanoHTTPD {
 					};
 					fis.skip(startFrom);
 
-					res = createResponse(Response.Status.PARTIAL_CONTENT, mime,
-							fis);
+					res = createResponse(Response.Status.PARTIAL_CONTENT, mime, fis);
 					res.addHeader("Content-Length", "" + dataLen);
-					res.addHeader("Content-Range", "bytes " + startFrom + "-"
-							+ endAt + "/" + fileLen);
+					res.addHeader("Content-Range", "bytes " + startFrom + "-" + endAt + "/" + fileLen);
 					res.addHeader("ETag", etag);
 				}
 			} else {
 				if (etag.equals(header.get("if-none-match")))
 					res = createResponse(Response.Status.NOT_MODIFIED, mime, "");
 				else {
-					res = createResponse(Response.Status.OK, mime,
-							new FileInputStream(file));
+					res = createResponse(Response.Status.OK, mime, new FileInputStream(file));
 					res.addHeader("Content-Length", "" + fileLen);
 					res.addHeader("ETag", etag);
 				}
 			}
 		} catch (IOException ioe) {
-			res = createResponse(Response.Status.FORBIDDEN,
-					NanoHTTPD.MIME_PLAINTEXT, "FORBIDDEN: Reading file failed.");
+			res = createResponse(Response.Status.FORBIDDEN, NanoHTTPD.MIME_PLAINTEXT, "FORBIDDEN: Reading file failed.");
 		}
 
 		return res;
@@ -201,113 +186,101 @@ public class HttpFileServer extends NanoHTTPD {
 
 	/**
 	 * 返回response 流格式
+	 * 
 	 * @param status
 	 * @param mimeType
 	 * @param message
 	 * @return
 	 */
-	private Response createResponse(Response.Status status, String mimeType,
-			InputStream message) {
+	private Response createResponse(Response.Status status, String mimeType, InputStream message) {
 		Response res = new Response(status, mimeType, message);
 		res.addHeader("Accept-Ranges", "bytes");
 		return res;
 	}
 
-    /**
-     * 返回 response 普通文本
-     * @param status
-     * @param mimeType
-     * @param message
-     * @return
-     */
-	private Response createResponse(Response.Status status, String mimeType,
-			String message) {
+	/**
+	 * 返回 response 普通文本
+	 * 
+	 * @param status
+	 * @param mimeType
+	 * @param message
+	 * @return
+	 */
+	private Response createResponse(Response.Status status, String mimeType, String message) {
 		Response res = new Response(status, mimeType, message);
 		res.addHeader("Accept-Ranges", "bytes");
 		return res;
 	}
-
 
 	/**
 	 * 返回http 服务器是否启动状态
+	 * 
 	 * @return
 	 */
-	public boolean isRunning(){
+	public boolean isRunning() {
 		return running;
 	}
+
 	/**
 	 * 启动http server
+	 * 
 	 * @throws IOException
 	 */
-	public  void startServer(OperationResult result) throws IOException {
-		try{
+	public void startServer(Handler handlerResult) throws IOException {
+		try {
 			super.start();
-			result.onSucceed();
+			handlerResult.sendEmptyMessage(WifiUtil.HTTP_SERVICE_START_OK);
 			running = true;
-			while(running){
-				if(GlobalUtil.SHOW_SYSTEM_OUT)
-					Log.i(LogUtil.LOG_TAG,"http file server ping,  sleep 1000");
+			while (running) {
+				System.out.println("http file server ping,  sleep 1000");
 				Thread.sleep(1000);
 			}
-		}catch(Exception e){
+		} catch (Exception e) {
 			e.printStackTrace();
-			result.onFailed();
+			handlerResult.sendEmptyMessage(WifiUtil.HTTP_SERVICE_START_FAILED);
 		}
 	}
-	
+
 	/**
 	 * 停止http server
 	 */
 	public void stopServer() {
-		if(running){
+		if (running) {
 			running = false;
-			if(null != this && super.isAlive()){
+			if (null != this && super.isAlive()) {
 				super.stop();
 			}
 		}
-		if(GlobalUtil.SHOW_SYSTEM_OUT)
-			Log.i(LogUtil.LOG_TAG,"http server stop success!");
+		System.out.println("http server stop success!");
 	}
 
-    /**
-     * simple test
-     * @param args
-     * @throws InterruptedException
-     */
+	/**
+	 * simple test
+	 * 
+	 * @param args
+	 * @throws InterruptedException
+	 */
 	public static void main(String[] args) throws InterruptedException {
 
-		final HttpFileServer httpFileServer = new  HttpFileServer(80,"STANDALONE");
+		final HttpFileServer httpFileServer = new HttpFileServer(80, "STANDALONE");
 
-		/*String localIp = "localhost";
-		String md5 = "k";
-		File file = new File("D:\\data.docx");
-		httpFileServer.addFile(localIp, md5, file);*/
+		/*
+		 * String localIp = "localhost"; String md5 = "k"; File file = new
+		 * File("D:\\data.docx"); httpFileServer.addFile(localIp, md5, file);
+		 */
 		try {
-			new Thread(){
-				public void run(){
+			new Thread() {
+				public void run() {
 					try {
-						httpFileServer.startServer(new OperationResult(){
-
-							@Override
-							public void onSucceed() {
-								if(GlobalUtil.SHOW_SYSTEM_OUT)
-									Log.i(LogUtil.LOG_TAG,"onSucceed");
-							}
-							@Override
-							public void onFailed() {
-								if(GlobalUtil.SHOW_SYSTEM_OUT)
-									Log.i(LogUtil.LOG_TAG,"onFailed");
-							}
-							
-						});
+						httpFileServer.startServer(new Handler());
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-					
+
 				}
 			}.start();
-			
+
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -317,4 +290,3 @@ public class HttpFileServer extends NanoHTTPD {
 		httpFileServer.stopServer();
 	}
 }
->>>>>>> branch 'master' of https://github.com/chainton/dankeshare
