@@ -15,7 +15,6 @@ import android.util.Log;
 
 import com.chainton.dankeshare.HttpFileResult;
 import com.chainton.dankeshare.data.enums.ShareCircleType;
-import com.chainton.dankeshare.service.WifiControllerCallBack;
 import com.chainton.dankeshare.util.LogUtil;
 import com.chainton.dankeshare.util.NetworkUtil;
 import com.chainton.dankeshare.wifi.util.WifiAdmin;
@@ -89,10 +88,8 @@ public class HotspotHttpFileService {
 	 * @param context
 	 *            android context
 	 */
-	public void startHttpShare(String ssid, ShareCircleType shareType, int port, boolean needHotPot,
-			WifiControllerCallBack resultCallback, Context context) {
+	public void startHttpShare(String ssid, ShareCircleType shareType, int port, boolean needHotPot, Context context) {
 		// 保留app层的handler，在有结果后返回消息给app层
-		mCallbackForAppResult = resultCallback;
 		mContext = context.getApplicationContext();
 		mWifiAdmin = new WifiAdmin(mContext);
 		mWifiApAdmin = new WifiApAdmin(mContext);
@@ -166,58 +163,47 @@ public class HotspotHttpFileService {
 			switch (msg.what) {
 			case WifiUtil.AP_CREATE_OK:
 				Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: AP_CREATE_OK");
-				if (getLocalIp() == null) {
-					mCallbackForAppResult.onHttpApStateFailed();
-				} else {
-					new Thread() {
-						@Override
-						public void run() {
-							try {
-								httpFileServer.startServer(mHandlerHttpResult);
-							} catch (IOException e) {
-								mCallbackForAppResult.onHttpApStateFailed();
-							}
-						}
-					}.start();
-				}
-				//mCallbackForAppResult.onHttpApStartOK();
+				mHandlerForTaskProcessor.sendEmptyMessage(WifiUtil.HTTP_AP_START_OK);
 				break;
 			case WifiUtil.AP_CREATE_FAILED:
 				Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: AP_CREATE_FAILED");
-				mWifiApManagerAdmin.closeWifiAp(null);
-				mCallbackForAppResult.onHttpApStateFailed();
+				mHandlerForTaskProcessor.sendEmptyMessage(WifiUtil.HTTP_AP_START_FAILED);
 				break;
 			case WifiUtil.AP_STOP_OK:
 				Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: AP_STOP_OK");
-				mCallbackForAppResult.onHttpApStateExitOK();
+				mHandlerForTaskProcessor.sendEmptyMessage(WifiUtil.HTTP_AP_STOP_OK);
 				break;
 			case WifiUtil.AP_STOP_FAILED:
 				Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: AP_STOP_FAILED");
-				mCallbackForAppResult.onHttpApStateExitFailed();
+				mHandlerForTaskProcessor.sendEmptyMessage(WifiUtil.HTTP_AP_STOP_FAILED);
 				break;
 			case WifiUtil.HTTP_SERVICE_START_OK:
-				
+				Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: HTTP_SERVICE_START_OK");
 				if (null != fileShare) {
 					final String url = addOneResouce(getLocalIp(), fileShare);
 					String urlServer = url.substring(0, url.lastIndexOf("/"));
-					mCallbackForAppResult.onHttpApStateOK(urlServer);
+					Message msgServerInfo = new Message();
+					msgServerInfo.what = WifiUtil.HTTP_SERVICE_START_OK;
+					msgServerInfo.obj = urlServer;
+					mHandlerForTaskProcessor.sendMessage(msgServerInfo);
 					Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: HTTP_SERVICE_START_OK, Url: " + urlServer);
 				} else {
 					Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: HTTP_SERVICE_START_OK");
-					mCallbackForAppResult.onHttpApStateOK();
+					mHandlerForTaskProcessor.sendEmptyMessage(WifiUtil.HTTP_SERVICE_START_OK);
 				}
+				mHandlerForTaskProcessor.sendEmptyMessage(WifiUtil.HTTP_SERVICE_START_OK);
 				break;
 			case WifiUtil.HTTP_SERVICE_START_FAILED:
 				Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: HTTP_SERVICE_START_FAILED");
-				mCallbackForAppResult.onHttpApStateFailed();
+				mHandlerForTaskProcessor.sendEmptyMessage(WifiUtil.HTTP_SERVICE_START_FAILED);
 				break;
 			case WifiUtil.HTTP_SERVICE_STOP_OK:
 				Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: HTTP_SERVICE_STOP_OK");
-				mCallbackForAppResult.onHttpApStateExitOK();
+				mHandlerForTaskProcessor.sendEmptyMessage(WifiUtil.HTTP_SERVICE_STOP_OK);
 				break;
 			case WifiUtil.HTTP_SERVICE_STOP_FAILED:
 				Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: HTTP_SERVICE_STOP_FAILED");
-				mCallbackForAppResult.onHttpApStateExitFailed();
+				mHandlerForTaskProcessor.sendEmptyMessage(WifiUtil.HTTP_SERVICE_STOP_FAILED);
 				break;
 			}
 		}
@@ -225,12 +211,26 @@ public class HotspotHttpFileService {
 	}
 
 	private HandlerHttpResult mHandlerHttpResult;
-	private WifiControllerCallBack mCallbackForAppResult;
+	private Handler mHandlerForTaskProcessor;
 	private WifiAdmin mWifiAdmin;
 	private WifiApAdmin mWifiApAdmin;
 	private WifiApManagerAdmin mWifiApManagerAdmin;
 	private File fileShare;
 
+	/**
+	 * 初始化HttpShare服务
+	 */
+	public void initHttpShareAp(Context context, Handler handlerHttpShare){
+		mContext = context.getApplicationContext();
+		mWifiAdmin = new WifiAdmin(mContext);
+		mWifiApAdmin = new WifiApAdmin(mContext);
+		mWifiApManagerAdmin = new WifiApManagerAdmin(mContext);
+		mHandlerHttpResult = new HandlerHttpResult(Looper.getMainLooper());
+		mHandlerForTaskProcessor = handlerHttpShare;
+		httpFileServer = null;
+		httpFileServer = new HttpFileServer(HTTP_PORT, STANDALONE_STYLE);
+		handler = new Handler(mContext.getMainLooper());
+	}
 	/**
 	 * 启动 http 服务器只分享一次文件
 	 * 
@@ -243,20 +243,31 @@ public class HotspotHttpFileService {
 	 * @param file
 	 *            要分享的文件
 	 */
-	public void shareOneFile(String ssid, WifiControllerCallBack resultCallback, Context context, File file) {
-		mContext = context.getApplicationContext();
-		mWifiAdmin = new WifiAdmin(mContext);
-		mWifiApAdmin = new WifiApAdmin(mContext);
-		mWifiApManagerAdmin = new WifiApManagerAdmin(mContext);
-		mHandlerHttpResult = new HandlerHttpResult(Looper.getMainLooper());
-		mCallbackForAppResult = resultCallback;
-		httpFileServer = null;
-		httpFileServer = new HttpFileServer(HTTP_PORT, STANDALONE_STYLE);
-		handler = new Handler(mContext.getMainLooper());
+	public void startHttpShareAp(String ssid, File file) {
 		fileShare = file;
 		createApAndHttp(ssid, file, mHandlerHttpResult);
 	}
 
+	/**
+	 * 启动HttpShare服务
+	 */
+	public void startHttpShareServer(){
+		if (getLocalIp() == null) {
+			mHandlerHttpResult.sendEmptyMessage(WifiUtil.HTTP_SERVICE_START_FAILED);
+		} else {
+			new Thread() {
+				@Override
+				public void run() {
+					try {
+						httpFileServer.startServer(mHandlerHttpResult);
+					} catch (IOException e) {
+						mHandlerHttpResult.sendEmptyMessage(WifiUtil.HTTP_SERVICE_START_FAILED);
+					}
+				}
+			}.start();
+		}
+		// mCurrentState.resultCallback.onHttpApStartOK();
+	}
 	/**
 	 * 添加文件
 	 * 
@@ -302,9 +313,8 @@ public class HotspotHttpFileService {
 	 * @param HotspotHttpResult
 	 *            回调函数
 	 */
-	public void stopHttpShare(WifiControllerCallBack resultCallback) {
-		mCallbackForAppResult = resultCallback;
-
+	public void stopHttpShare(Handler handlerHttpShare) {
+		mHandlerForTaskProcessor = handlerHttpShare;
 		try {
 			stopHttpAndHotspot(mHandlerHttpResult);
 		} catch (Exception e) {
@@ -323,6 +333,7 @@ public class HotspotHttpFileService {
 		if (httpFileServer.isRunning()) {
 			httpFileServer.stopServer();
 		}
+		mHandlerHttpResult.sendEmptyMessage(WifiUtil.HTTP_SERVICE_STOP_OK);
 		// 关闭热点服务
 		if (mNeedHotPot) {
 			mWifiApManagerAdmin.closeWifiAp(handlerStopHttpResult);
