@@ -397,8 +397,6 @@ public class TaskProcessor extends Handler {
 	private void startAP(Handler handlerAP) {
 		Log.e(LogUtil.LOG_TAG_NEW, "-- ssid: " + mCurrentState.SSID + " -- passkey: " + mCurrentState.passkey);
 		sendEmptyMessage(WifiUtil.AP_CREATE_STARTING);
-		// 保存当前用户网络环境
-		mWifiApManagerAdmin.saveWifiState();
 		// 打开热点
 		mWifiApManagerAdmin.openWifiAp(mCurrentState.SSID, mCurrentState.passkey, mCurrentState.secretType, handlerAP);
 	}
@@ -506,7 +504,12 @@ public class TaskProcessor extends Handler {
 		sendEmptyMessage(WifiUtil.CONNECT_SERVICE_STARTING);
 		final ClientInfo info = mCurrentState.selfInfo;
 		info.ip = mWifiAdmin.getIPAddress() + "";
-		mCurrentState.shareCircleInfo.serverIP = WifiUtil.ipLongToString(mWifiAdmin.getServerIPAddress());
+		String preIP = WifiUtil.getPreIPByPhoneType(mCurrentState.SSID);
+		if (preIP == "") {
+			mCurrentState.shareCircleInfo.serverIP = WifiUtil.ipLongToString(mWifiAdmin.getServerIPAddress());
+		} else {
+			mCurrentState.shareCircleInfo.serverIP = preIP + "1";
+		}
 		GlobalUtil.threadExecutor().execute(new Runnable() {
 			@Override
 			public void run() {
@@ -547,8 +550,6 @@ public class TaskProcessor extends Handler {
 	 * 启动ap及http服务进行文件分享
 	 */
 	private void startHttpOneFileShare(Handler handlerHttpShare) {
-		// 保存当前状态
-		mWifiApManagerAdmin.saveWifiState();
 		// 打开分享服务
 		mHttpShareService = HotspotHttpFileService.getInstance();
 		mHttpShareService.initHttpShareAp(mContext, handlerHttpShare);
@@ -576,6 +577,8 @@ public class TaskProcessor extends Handler {
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: AP_CREATE_STARTING");
 			// 开始启动热点
 			mTaskProcessorDetailStatus = WifiUtil.AP_CREATE_STARTING;
+			// 保存当前用户网络环境
+			mWifiApManagerAdmin.saveWifiState();
 			break;
 		case WifiUtil.AP_CREATE_OK:
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: AP_CREATE_OK");
@@ -605,7 +608,10 @@ public class TaskProcessor extends Handler {
 		case WifiUtil.AP_SERVICE_CREATE_FAILED:
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: AP_SERVICE_CREATE_FAILED");
 			mTaskProcessorDetailStatus = WifiUtil.AP_SERVICE_CREATE_FAILED;
-			stopAP(selfHandler);
+			// stopAP(selfHandler);
+			// 恢复启动热点之前的手机网络环境
+			mWifiApManagerAdmin.restoreWifiState(mEmptyOperationResult);
+
 			mCurrentState.taskStatus = STATUS_TASK_STOP;
 			mCurrentState.resultCallback.onApServerStateFailed();
 			break;
@@ -636,6 +642,7 @@ public class TaskProcessor extends Handler {
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: AP_STOP_OK");
 			mTaskProcessorDetailStatus = WifiUtil.AP_STOP_OK;
 			mCurrentState.taskStatus = STATUS_TASK_STOP;
+			// 恢复启动热点之前的手机网络环境
 			mWifiApManagerAdmin.restoreWifiState(mEmptyOperationResult);
 			break;
 		case WifiUtil.AP_STOP_ABNORMAL:
@@ -818,6 +825,12 @@ public class TaskProcessor extends Handler {
 		/**
 		 * http文件分享服务处理
 		 */
+		case WifiUtil.HTTP_AP_STARTING:
+			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: HTTP_AP_STARTING");
+			mTaskProcessorDetailStatus = WifiUtil.HTTP_AP_STARTING;
+			// 保存当前用户网络环境
+			mWifiApManagerAdmin.saveWifiState();
+			break;
 		case WifiUtil.HTTP_AP_START_OK:
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: HTTP_AP_START_OK");
 			mTaskProcessorDetailStatus = WifiUtil.HTTP_AP_START_OK;
@@ -829,7 +842,10 @@ public class TaskProcessor extends Handler {
 			Log.e(LogUtil.LOG_TAG_NEW, "TaskProcessor: HTTP_AP_START_FAILED");
 			mTaskProcessorDetailStatus = WifiUtil.HTTP_AP_START_FAILED;
 			mCurrentState.taskStatus = STATUS_TASK_STOP;
-			mWifiApManagerAdmin.closeWifiAp(null);
+			// mWifiApManagerAdmin.closeWifiAp(null);
+			// 恢复启动热点之前的手机网络环境
+			mWifiApManagerAdmin.restoreWifiState(mEmptyOperationResult);
+
 			mCurrentState.resultCallback.onHttpApStateFailed();
 			break;
 		case WifiUtil.HTTP_AP_STOP_OK:

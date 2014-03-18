@@ -231,7 +231,7 @@ public final class WifiApController {
 			mTaskProcessor.startTaskProcessor();
 		}
 		targetStatusInfo.statusTaskType = TaskProcessor.TASK_TYPE_SEARCH;
-		targetStatusInfo.secretType = WifiUtil.TYPE_WPA;
+		//targetStatusInfo.secretType = WifiUtil.TYPE_WPA;
 		targetStatusInfo.resultCallback = searchResultCallback;
 		targetStatusInfo.shareCircleInfo = new ShareCircleInfo("ForSearch", ShareCircleType.WIFIAP, appInfo);
 		mTaskProcessor.setTargetWifiStatus(targetStatusInfo);

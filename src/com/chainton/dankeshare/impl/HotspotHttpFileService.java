@@ -161,6 +161,10 @@ public class HotspotHttpFileService {
 		public void handleMessage(Message msg) {
 			// TODO Auto-generated method stub
 			switch (msg.what) {
+			case WifiUtil.AP_CREATE_STARTING:
+				Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: AP_CREATE_STARTING");
+				mHandlerForTaskProcessor.sendEmptyMessage(WifiUtil.HTTP_AP_STARTING);
+				break;
 			case WifiUtil.AP_CREATE_OK:
 				Log.e(LogUtil.LOG_TAG_NEW, "HttpShareOneFile: AP_CREATE_OK");
 				mHandlerForTaskProcessor.sendEmptyMessage(WifiUtil.HTTP_AP_START_OK);
@@ -244,6 +248,7 @@ public class HotspotHttpFileService {
 	 *            要分享的文件
 	 */
 	public void startHttpShareAp(String ssid, File file) {
+		mHandlerHttpResult.sendEmptyMessage(WifiUtil.AP_CREATE_STARTING);
 		fileShare = file;
 		createApAndHttp(ssid, file, mHandlerHttpResult);
 	}
