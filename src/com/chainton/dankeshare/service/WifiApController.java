@@ -36,9 +36,6 @@ public final class WifiApController {
 	 * 单例锁
 	 */
 	private static final Object LOCK = new Object();
-
-	private boolean isServer = false;
-	private String serverIp = null;
 	
 	private TaskProcessor mTaskProcessor;
 	private WifiApManagerAdmin mWifiApManagerAdmin;
@@ -146,7 +143,7 @@ public final class WifiApController {
 	 * @param context
 	 *            UI上下文
 	 */
-	public void setApServerState(String shareCircleName, ShareCircleType shareCircleType, ShareCircleAppInfo appInfo,
+	public void setApServerState(long sessionID, String shareCircleName, ShareCircleType shareCircleType, ShareCircleAppInfo appInfo,
 			ClientInfo selfInfo, int maxClients, WifiControllerCallBack createApResultCallback, ShareCircleServer server,
 			ShareCircleClient client, Context context) {
 		TargetStatusInfo targetStatusInfo = new TargetStatusInfo();
@@ -162,6 +159,7 @@ public final class WifiApController {
 			mTaskProcessor.startTaskProcessor();
 		}
 		targetStatusInfo.statusTaskType = TaskProcessor.TASK_TYPE_AP;
+		targetStatusInfo.sessionID = sessionID;
 		targetStatusInfo.SSID = wifiApShareCircleInfo.ssid;
 		targetStatusInfo.passkey = wifiApShareCircleInfo.shareKey;
 		targetStatusInfo.secretType = WifiUtil.TYPE_WPA;
@@ -187,7 +185,7 @@ public final class WifiApController {
 	 * @param context
 	 *            UI上下文
 	 */
-	public void setApClientState(ShareCircleInfo circleInfo, ClientInfo selfInfo, WifiControllerCallBack createClientResultCallback,
+	public void setApClientState(long sessionID, ShareCircleInfo circleInfo, ClientInfo selfInfo, WifiControllerCallBack createClientResultCallback,
 			ShareCircleClient client, Context context) {	
 		TargetStatusInfo targetStatusInfo = new TargetStatusInfo();
 		WifiApShareCircleInfo waci = (WifiApShareCircleInfo)circleInfo;
@@ -198,6 +196,7 @@ public final class WifiApController {
 			mTaskProcessor.startTaskProcessor();
 		}
 		targetStatusInfo.statusTaskType = TaskProcessor.TASK_TYPE_CONNECT;
+		targetStatusInfo.sessionID = sessionID;
 		targetStatusInfo.SSID = waci.scanResult.SSID;
 		targetStatusInfo.passkey = waci.shareKey;
 		targetStatusInfo.secretType = WifiUtil.TYPE_WPA;

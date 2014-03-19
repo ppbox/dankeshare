@@ -19,6 +19,7 @@ public class TargetStatusInfo {
 	 * 取值：TASK_TYPE_AP; TASK_TYPE_CLIENT; TASK_TYPE_SEARCH;
 	 */
 	public int statusTaskType;
+	public long sessionID;
 	/**
 	 * ssid及passkey，用来创建热点或者连接指定热点
 	 */

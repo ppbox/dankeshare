@@ -13,34 +13,34 @@ public interface WifiControllerCallBack {
 	/**
 	 * 服务器端回调
 	 */
-	public void onApServerStateOK(ShareCircleInfo shareCircleInfo);
+	public void onApServerStateOK(long sessionID, ShareCircleInfo shareCircleInfo);
 
-	public void onApServerStateFailed();
+	public void onApServerStateFailed(long sessionID);
 
-	public void onApServerStateExitOK();
+	public void onApServerStateExitOK(long sessionID);
 
-	public void onApServerStateExitFailed();
+	public void onApServerStateExitFailed(long sessionID);
 
-	public void onApServerStateExitAbnormal();
+	public void onApServerStateExitAbnormal(long sessionID);
 
 	// 客户端有人退出的时候调用
-	public void onClientExit(ClientInfo client);
+	public void onClientExit(long sessionID, ClientInfo client);
 
 	/**
 	 * 客户端回调
 	 */
-	public void onApClientStateOK();
+	public void onApClientStateOK(long sessionID);
 
-	public void onApClientStateFailed();
+	public void onApClientStateFailed(long sessionID);
 
 	/**
 	 * exitInfo用来标记退出的原因
 	 * DISCONNECT_NORMAL表示正常断开； DISCONNECT_BY_USER表示用户自己断开；
 	 * DISCONNECT_BY_SERVER表示被服务器端断开； DISCONNECT_BY_EXCEPTION表示异常情况断开
 	 */
-	public void onApClientStateExitOK(int exitInfo);
+	public void onApClientStateExitOK(long sessionID, int exitInfo);
 
-	public void onApClientStateExitFailed();
+	public void onApClientStateExitFailed(long sessionID);
 
 	public void onSearchShareStateOK();
 
