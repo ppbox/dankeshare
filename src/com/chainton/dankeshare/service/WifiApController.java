@@ -1,6 +1,7 @@
 package com.chainton.dankeshare.service;
 
 import java.io.File;
+import java.util.Collection;
 
 import android.content.Context;
 import android.util.Log;
@@ -73,8 +74,9 @@ public final class WifiApController {
 	public void create(final Context context) {
 		// get the task processor instance for next process
 		mTaskProcessor = TaskProcessor.getTaskProcessorInstance(context);
+		mTaskProcessor.startTaskProcessor();
 		mWifiApManagerAdmin = new WifiApManagerAdmin(context);
-		saveWifiState();
+		//saveWifiState();
 	}
 
 	/**
@@ -85,8 +87,8 @@ public final class WifiApController {
 	 */
 	public void resume(final Context context) {
 		// get the task processor instance for next process
-		mTaskProcessor = TaskProcessor.getTaskProcessorInstance(context);
-		mWifiApManagerAdmin = new WifiApManagerAdmin(context);
+//		mTaskProcessor = TaskProcessor.getTaskProcessorInstance(context);
+//		mWifiApManagerAdmin = new WifiApManagerAdmin(context);
 	}
 
 	/**
@@ -95,7 +97,7 @@ public final class WifiApController {
 	public void destroy() {
 		Log.e(LogUtil.LOG_TAG,
 				"destroydestroydestroydestroydestroydestroydestroydestroydestroydestroydestroydestroydestroy..........");
-		restoreWifiState(null);
+		//restoreWifiState(null);
 	}
 
 	/**
@@ -154,10 +156,10 @@ public final class WifiApController {
 		wifiApShareCircleInfo.maxClients = maxClients;
 		Log.d(LogUtil.LOG_TAG, "Create SSID " + wifiApShareCircleInfo.ssid + " with sharedKey "
 				+ wifiApShareCircleInfo.shareKey);
-		Log.e(LogUtil.LOG_TAG_NEW, " TaskProcessorStatus : " + mTaskProcessor.getTaskProcessorStatus());
-		if (mTaskProcessor.getTaskProcessorStatus() != TaskProcessor.TASKPROCESSOR_RUNNING) {
-			mTaskProcessor.startTaskProcessor();
-		}
+//		Log.e(LogUtil.LOG_TAG_NEW, " TaskProcessorStatus : " + mTaskProcessor.getTaskProcessorStatus());
+//		if (mTaskProcessor.getTaskProcessorStatus() != TaskProcessor.TASKPROCESSOR_RUNNING) {
+//			mTaskProcessor.startTaskProcessor();
+//		}
 		targetStatusInfo.statusTaskType = TaskProcessor.TASK_TYPE_AP;
 		targetStatusInfo.sessionID = sessionID;
 		targetStatusInfo.SSID = wifiApShareCircleInfo.ssid;
@@ -191,10 +193,10 @@ public final class WifiApController {
 		WifiApShareCircleInfo waci = (WifiApShareCircleInfo)circleInfo;
 		
 		Log.d(LogUtil.LOG_TAG, "Connect to SSID: " + waci.scanResult.SSID + " - sharekey: " + waci.shareKey);
-		Log.e(LogUtil.LOG_TAG_NEW, " TaskProcessorStatus : " + mTaskProcessor.getTaskProcessorStatus());
-		if (mTaskProcessor.getTaskProcessorStatus() != TaskProcessor.TASKPROCESSOR_RUNNING) {
-			mTaskProcessor.startTaskProcessor();
-		}
+//		Log.e(LogUtil.LOG_TAG_NEW, " TaskProcessorStatus : " + mTaskProcessor.getTaskProcessorStatus());
+//		if (mTaskProcessor.getTaskProcessorStatus() != TaskProcessor.TASKPROCESSOR_RUNNING) {
+//			mTaskProcessor.startTaskProcessor();
+//		}
 		targetStatusInfo.statusTaskType = TaskProcessor.TASK_TYPE_CONNECT;
 		targetStatusInfo.sessionID = sessionID;
 		targetStatusInfo.SSID = waci.scanResult.SSID;
@@ -226,9 +228,9 @@ public final class WifiApController {
 			WifiControllerCallBack searchResultCallback, Context context, boolean autoStop) {
 		TargetStatusInfo targetStatusInfo = new TargetStatusInfo();
 		
-		if (mTaskProcessor.getTaskProcessorStatus() != TaskProcessor.TASKPROCESSOR_RUNNING) {
-			mTaskProcessor.startTaskProcessor();
-		}
+//		if (mTaskProcessor.getTaskProcessorStatus() != TaskProcessor.TASKPROCESSOR_RUNNING) {
+//			mTaskProcessor.startTaskProcessor();
+//		}
 		targetStatusInfo.statusTaskType = TaskProcessor.TASK_TYPE_SEARCH;
 		//targetStatusInfo.secretType = WifiUtil.TYPE_WPA;
 		targetStatusInfo.resultCallback = searchResultCallback;
@@ -245,9 +247,9 @@ public final class WifiApController {
 	public void setHttpShareOneFileState(String ssid, WifiControllerCallBack resultCallback, File file){
 		TargetStatusInfo targetStatusInfo = new TargetStatusInfo();
 
-		if (mTaskProcessor.getTaskProcessorStatus() != TaskProcessor.TASKPROCESSOR_RUNNING) {
-			mTaskProcessor.startTaskProcessor();
-		}
+//		if (mTaskProcessor.getTaskProcessorStatus() != TaskProcessor.TASKPROCESSOR_RUNNING) {
+//			mTaskProcessor.startTaskProcessor();
+//		}
 		targetStatusInfo.statusTaskType = TaskProcessor.TASK_TYPE_HTTP_SHARE;
 		targetStatusInfo.SSID = ssid;
 		targetStatusInfo.resultCallback = resultCallback;
@@ -261,10 +263,18 @@ public final class WifiApController {
 	public void setIdleState(){
 		TargetStatusInfo targetStatusInfo = new TargetStatusInfo();
 		
-		if (mTaskProcessor.getTaskProcessorStatus() != TaskProcessor.TASKPROCESSOR_RUNNING) {
-			mTaskProcessor.startTaskProcessor();
-		}
+//		if (mTaskProcessor.getTaskProcessorStatus() != TaskProcessor.TASKPROCESSOR_RUNNING) {
+//			mTaskProcessor.startTaskProcessor();
+//		}
 		targetStatusInfo.statusTaskType = TaskProcessor.TASK_TYPE_IDLE;
 		mTaskProcessor.setTargetWifiStatus(targetStatusInfo);
+	}
+	
+	/**
+	 * 得到当前周围可以连接的分享圈
+	 * 该方法立刻返回
+	 */
+	public Collection<ShareCircleInfo> getFoundShareCircleList(ShareCircleAppInfo appInfo){
+		return mWifiApManagerAdmin.getShareCircleList(appInfo);
 	}
 }
